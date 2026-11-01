@@ -3,68 +3,50 @@ import { Link } from 'react-router-dom';
 import { t, n2, getLang } from '../lib/i18n.js';
 import { money, monthLabel } from '../lib/util.js';
 
-// Discipline lines that rotate in the headline
-const LINES = [
-  ['এক রান্নাঘর, সবাই মিলে, একটাই নিয়ম — সময়মতো।', 'One kitchen, all of us, one rule: on time.'],
-  ['রাত ১০টার আগে মিল জানাও, বাবুর্চিকে সময় দাও।', 'Tell the manager your meal before 10 PM.'],
-  ['সময়মতো জমা দিলে পুরো মাসটা শান্ত থাকে।', 'Pay on time and the whole month stays calm.'],
-  ['পরিষ্কার রান্নাঘর সবার দায়িত্ব।', 'A clean kitchen is everyone’s job.'],
-  ['আজকের বাজারের হিসাব আজই।', 'Today’s bazar, settled today.'],
+// Wise words & daily-life advice: food habits, rules, lifestyle.
+// Each slide has its own illustration and colour theme.
+export const SLIDES = [
+  { icon: '⏰', side: ['📅', '✅'], c: ['#fff4d6', '#f59e0b', '#b45309'], bn: 'সময়ের এক ফোঁড়, অসময়ের দশ ফোঁড়।', en: 'A stitch in time saves nine.', by: ['বাংলা প্রবাদ', 'Proverb'] },
+  { icon: '🌅', side: ['🛏️', '☀️'], c: ['#ffe8dc', '#f97316', '#c2410c'], bn: 'আগে ঘুমাতে যাও, ভোরে ওঠো — এতে মানুষ সুস্থ, সমৃদ্ধ আর জ্ঞানী হয়।', en: 'Early to bed and early to rise makes a man healthy, wealthy, and wise.', by: ['বেঞ্জামিন ফ্র্যাংকলিন', 'Benjamin Franklin'] },
+  { icon: '🍽️', side: ['🍚', '💧'], c: ['#e3f6ec', '#10b981', '#047857'], bn: 'পেটের এক ভাগ খাবারের জন্য, এক ভাগ পানির জন্য, আর এক ভাগ শ্বাসের জন্য রাখো।', en: 'Keep a third of the stomach for food, a third for water and a third for breath.', by: ['হাদিস, তিরমিযি', 'Hadith, Tirmidhi'] },
+  { icon: '💧', side: ['🥛', '🌿'], c: ['#dff2ff', '#0ea5e9', '#0369a1'], bn: 'দিনে অন্তত ৮ গ্লাস পানি পান করুন — শরীর থাকবে সতেজ, মাথা থাকবে ঠান্ডা।', en: 'Drink at least 8 glasses of water a day to stay fresh and clear-headed.', by: ['স্বাস্থ্য পরামর্শ', 'Health tip'] },
+  { icon: '🥗', side: ['🥕', '🫘'], c: ['#eaf7d9', '#65a30d', '#3f6212'], bn: 'প্রতিদিন ভাতের সাথে সবজি আর ডাল রাখুন; তেলে ভাজা খাবার কমান।', en: 'Have vegetables and dal with your rice every day, and cut down on fried food.', by: ['স্বাস্থ্য পরামর্শ', 'Health tip'] },
+  { icon: '🧼', side: ['✨', '🧹'], c: ['#e9f0ff', '#6366f1', '#4338ca'], bn: 'পবিত্রতা ঈমানের অর্ধেক।', en: 'Cleanliness is half of faith.', by: ['হাদিস, সহিহ মুসলিম', 'Hadith, Sahih Muslim'] },
+  { icon: '🔁', side: ['📈', '🏆'], c: ['#f3e8ff', '#a855f7', '#7e22ce'], bn: 'আমরা বারবার যা করি, আমরা তা-ই। শ্রেষ্ঠত্ব একবারের কাজ নয়, একটা অভ্যাস।', en: 'We are what we repeatedly do. Excellence, then, is not an act, but a habit.', by: ['উইল ডুরান্ট', 'Will Durant'] },
+  { icon: '🚶', side: ['👟', '🌳'], c: ['#dcfce7', '#22c55e', '#15803d'], bn: 'প্রতিদিন অন্তত ৩০ মিনিট হাঁটুন — শরীর আর মন দুটোই ভালো থাকবে।', en: 'Walk at least 30 minutes a day — good for body and mind.', by: ['স্বাস্থ্য পরামর্শ', 'Health tip'] },
+  { icon: '😴', side: ['🌙', '⭐'], c: ['#e0e7ff', '#4f46e5', '#3730a3'], bn: 'রাতের খাবার ঘুমের অন্তত ২ ঘণ্টা আগে খান, আর ৭–৮ ঘণ্টা ঘুমান।', en: 'Eat dinner at least 2 hours before bed and sleep 7–8 hours.', by: ['স্বাস্থ্য পরামর্শ', 'Health tip'] },
+  { icon: '💪', side: ['❤️', '🍎'], c: ['#ffe4e6', '#f43f5e', '#be123c'], bn: 'স্বাস্থ্যই সকল সুখের মূল।', en: 'Health is the root of all happiness.', by: ['বাংলা প্রবাদ', 'Proverb'] },
+  { icon: '🤝', side: ['🏠', '🙂'], c: ['#fef3c7', '#d97706', '#92400e'], bn: 'একসাথে থাকার সৌন্দর্য একে অপরের প্রতি সম্মান আর সময়মতো দায়িত্ব পালনে।', en: 'Living together works when we respect each other and do our part on time.', by: ['Bachelor Home', 'Bachelor Home'] },
 ];
 
-// A small CSS-3D house: every lit window is one member of the mess.
-function House({ members }) {
-  const lit = Math.max(1, Math.min(members || 8, 12));
-  const front = Array.from({ length: 6 }, (_, i) => i < Math.min(lit, 6));
-  const side = Array.from({ length: 6 }, (_, i) => i + 6 < lit);
+function Slide({ s, pos }) {
   return (
-    <div className="h3-house">
-      <div className="h3-ground" />
-      <div className="h3-face h3-front">
-        <div className="h3-windows">
-          {front.map((on, i) => (
-            <span key={i} className={`h3-win ${on ? 'on' : ''}`} style={{ animationDelay: `${0.25 + i * 0.12}s` }} />
-          ))}
-        </div>
-        <span className="h3-door" />
-      </div>
-      <div className="h3-face h3-back" />
-      <div className="h3-face h3-left" />
-      <div className="h3-face h3-right">
-        <div className="h3-windows side">
-          {side.map((on, i) => (
-            <span key={i} className={`h3-win ${on ? 'on' : ''}`} style={{ animationDelay: `${1 + i * 0.12}s` }} />
-          ))}
-        </div>
-      </div>
-      <div className="h3-roof r1" />
-      <div className="h3-roof r2" />
-      <div className="h3-gable g1" />
-      <div className="h3-gable g2" />
-      <div className="h3-chimney">
-        <i />
-        <i />
-        <i />
-      </div>
+    <div className={`hs-card p${pos}`} style={{ '--c1': s.c[0], '--c2': s.c[1], '--c3': s.c[2] }}>
+      <span className="hs-blob b1" />
+      <span className="hs-blob b2" />
+      <span className="hs-icon">{s.icon}</span>
+      <span className="hs-side s1">{s.side[0]}</span>
+      <span className="hs-side s2">{s.side[1]}</span>
     </div>
   );
 }
 
 export function Hero3D({ data, month, user }) {
-  const sceneRef = useRef(null);
-  const [line, setLine] = useState(0);
+  const stageRef = useRef(null);
+  const [i, setI] = useState(0);
+  const [paused, setPaused] = useState(false);
   const lang = getLang();
+  const n = SLIDES.length;
 
-  // rotate discipline lines
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const iv = setInterval(() => setLine((x) => (x + 1) % LINES.length), 4200);
+    if (paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const iv = setInterval(() => setI((x) => (x + 1) % n), 5500);
     return () => clearInterval(iv);
-  }, []);
+  }, [paused, n]);
 
-  // tilt with pointer (desktop) or phone orientation (mobile)
+  // tilt the 3D stage with pointer (desktop) or phone orientation
   useEffect(() => {
-    const el = sceneRef.current;
+    const el = stageRef.current;
     if (!el) return;
     const set = (rx, ry) => {
       el.style.setProperty('--rx', `${rx}deg`);
@@ -72,16 +54,11 @@ export function Hero3D({ data, month, user }) {
     };
     const onMove = (e) => {
       const r = el.getBoundingClientRect();
-      const x = (e.clientX - (r.left + r.width / 2)) / r.width;
-      const y = (e.clientY - (r.top + r.height / 2)) / r.height;
-      set(-8 - y * 14, -35 + x * 30);
+      set(((e.clientY - r.top) / r.height - 0.5) * -16, ((e.clientX - r.left) / r.width - 0.5) * 24);
     };
-    const onLeave = () => set(-8, -35);
-    const onTilt = (e) => {
-      if (e.gamma == null) return;
-      set(-8 - Math.max(-20, Math.min(20, (e.beta || 45) - 45)) * 0.4, -35 + Math.max(-30, Math.min(30, e.gamma)) * 0.8);
-    };
-    const host = el.parentElement;
+    const onLeave = () => set(0, 0);
+    const onTilt = (e) => e.gamma != null && set(Math.max(-12, Math.min(12, ((e.beta || 45) - 45) * -0.3)), Math.max(-18, Math.min(18, e.gamma * 0.6)));
+    const host = el.closest('.h3');
     host.addEventListener('pointermove', onMove);
     host.addEventListener('pointerleave', onLeave);
     window.addEventListener('deviceorientation', onTilt);
@@ -92,64 +69,71 @@ export function Hero3D({ data, month, user }) {
     };
   }, []);
 
-  const menu = data.todayMenu;
-  const L = LINES[line][lang === 'en' ? 1 : 0];
+  const s = SLIDES[i];
+  const L = lang === 'en' ? 1 : 0;
+  const rateBox = (
+    <div className="h3-rate">
+      <div>
+        <div className="h3-rate-k">
+          {t('runningMealRate')} · {monthLabel(month)}
+        </div>
+        <div className="h3-rate-v">{money(data.mealRate, data.currency)}</div>
+      </div>
+      <div className="h3-rate-meta">
+        <b>{n2(data.totalMeals)}</b> {t('meals')}
+        <br />
+        <b>{money(data.totalBazar, data.currency)}</b> {t('bazar')}
+      </div>
+    </div>
+  );
+  const cta = (
+    <div className="row h3-cta">
+      <Link className="btn primary h3-btn" to={user ? '/app' : '/login'}>
+        {user ? t('goDashboard') : t('loginToAccount')}
+      </Link>
+      <a className="btn h3-btn" href="#this-month">
+        {t('seeThisMonth')}
+      </a>
+    </div>
+  );
 
   return (
-    <section className="h3">
-      <div className="h3-copy">
-        <div className="h3-mess">
-          {data.messName}
-          {data.address ? <span className="muted"> · {data.address}</span> : null}
-        </div>
-        <h1 className="h3-title" aria-live="polite">
-          <span key={line} className="h3-line">
-            {L}
-          </span>
-        </h1>
-        <p className="h3-sub">{t('heroSub')}</p>
-        <div className="h3-rate">
-          <div>
-            <div className="h3-rate-k">
-              {t('runningMealRate')} · {monthLabel(month)}
-            </div>
-            <div className="h3-rate-v">{money(data.mealRate, data.currency)}</div>
+    <>
+      <section className="h3" style={{ '--c1': s.c[0], '--c2': s.c[1], '--c3': s.c[2] }} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+        <div className="h3-copy">
+          <div className="h3-mess">
+            {data.messName}
+            {data.address ? <span className="muted"> · {data.address}</span> : null}
           </div>
-          <div className="h3-rate-meta">
-            <b>{n2(data.totalMeals)}</b> {t('meals')}
-            <br />
-            <b>{money(data.totalBazar, data.currency)}</b> {t('bazar')}
+          <blockquote className="h3-quote" aria-live="polite" key={i}>
+            <p className={`h3-title ${s[L === 1 ? 'en' : 'bn'].length > 70 ? 'long' : ''}`}>{L === 1 ? s.en : s.bn}</p>
+            <footer className="h3-by">— {s.by[L]}</footer>
+          </blockquote>
+          <div className="h3-dots" role="tablist" aria-label={t('wiseWords')}>
+            {SLIDES.map((x, k) => (
+              <button key={k} className={k === i ? 'on' : ''} aria-label={`${k + 1}`} onClick={() => setI(k)} />
+            ))}
+          </div>
+          <div className="only-desktop-hero">
+            {rateBox}
+            {cta}
           </div>
         </div>
-        <div className="row h3-cta">
-          <Link className="btn primary h3-btn" to={user ? '/app' : '/login'}>
-            {user ? t('goDashboard') : t('loginToAccount')}
-          </Link>
-          <a className="btn h3-btn" href="#this-month">
-            {t('seeThisMonth')}
-          </a>
-        </div>
-      </div>
 
-      <div className="h3-stage" aria-hidden="true">
-        <div className="h3-scene" ref={sceneRef}>
-          <House members={data.memberCount} />
-          <div className="h3-float f1">
-            <span className="k">{t('mealRate')}</span>
-            <b>{money(data.mealRate, data.currency)}</b>
-          </div>
-          <div className="h3-float f2">
-            <span className="k">{t('todayMenu')}</span>
-            <b>{menu ? menu.lunch || menu.dinner : t('noMenu')}</b>
-          </div>
-          <div className="h3-float f3">
-            <span className="k">💡</span>
-            <b>
-              {n2(data.memberCount)} {t('lightsMembers')}
-            </b>
+        <div className="h3-stage" ref={stageRef} aria-hidden="true">
+          <div className="hs-deck">
+            {SLIDES.map((x, k) => {
+              const off = (k - i + n) % n;
+              const pos = off === 0 ? 0 : off === 1 ? 1 : off === 2 ? 2 : off === n - 1 ? -1 : 9;
+              return pos === 9 ? null : <Slide key={k} s={x} pos={pos === -1 ? 'm1' : pos} />;
+            })}
           </div>
         </div>
+      </section>
+      <div className="only-mobile-hero">
+        {rateBox}
+        {cta}
       </div>
-    </section>
+    </>
   );
 }

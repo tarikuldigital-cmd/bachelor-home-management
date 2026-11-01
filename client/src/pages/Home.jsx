@@ -9,6 +9,7 @@ import { useAuth, usePrefs } from '../App.jsx';
 import { getLang } from '../lib/i18n.js';
 import { TrendCard } from '../components/Trend.jsx';
 import { Hero3D } from '../components/Hero3D.jsx';
+import { NewsButton } from '../components/News.jsx';
 
 export function RulesAlert({ rules }) {
   if (!rules || !rules.length) return null;
@@ -262,6 +263,7 @@ export default function Home() {
           </>
         )}
       </main>
+      <NewsButton />
       <footer className="site-foot">
         <div className="container inner">
           <div>
