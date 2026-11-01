@@ -4,11 +4,53 @@ import { api } from '../lib/api.js';
 import { t, n2 } from '../lib/i18n.js';
 import { money, num, dateLabel } from '../lib/util.js';
 import { monthOf, todayStr } from '../lib/engine.js';
-import { Stat, MonthPicker, Bars, Spinner, useApi, Avatar, Empty } from '../components/ui.jsx';
+import { Stat, MonthPicker, Bars, Spinner, useApi, Avatar, Empty, useToast } from '../components/ui.jsx';
 import { AccountStats, DueAlert, MembersTable } from '../components/Account.jsx';
 import { useAuth } from '../App.jsx';
 import { TrendCard } from '../components/Trend.jsx';
 import { MenuCard } from './Home.jsx';
+
+// Archived month = only mess totals are public. Manager can load the full per-member ledger.
+function ArchiveNotice({ isManager }) {
+  const { logout, login, user } = useAuth();
+  const toast = useToast();
+  return (
+    <div className="alert amber">
+      <span style={{ fontSize: 24 }}>📒</span>
+      <div className="grow small">
+        <b>{t('archivedTitle')}</b>
+        <div>{isManager ? t('archivedManager') : t('archivedMember')}</div>
+      </div>
+      {isManager && (
+        <label className="btn primary">
+          ⬆️ {t('loadLedger')}
+          <input
+            type="file"
+            accept="application/json"
+            hidden
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                const data = JSON.parse(await file.text());
+                await api('importData', { data });
+                toast(`✓ ${t('ledgerLoaded')}`);
+                try {
+                  await login(user.username, '1234');
+                  location.reload();
+                } catch {
+                  logout();
+                }
+              } catch (x) {
+                toast(x.message, true);
+              }
+            }}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { user, settings, isManager } = useAuth();
@@ -37,13 +79,22 @@ export default function Dashboard() {
         <MonthPicker value={month} months={d.months} onChange={setMonth} />
       </div>
 
-      <DueAlert stats={d.stats} cur={cur} month={month} />
+      {pub.data.archived ? <ArchiveNotice isManager={isManager} /> : <DueAlert stats={d.stats} cur={cur} month={month} />}
 
       <TrendCard month={month} cur={cur} />
 
-      <AccountStats d={d} cur={cur} />
+      {!pub.data.archived && <AccountStats d={d} cur={cur} />}
 
-      {isManager && o && (
+      {pub.data.archived && (
+        <div className="grid g4">
+          <Stat label={t('totalMeals')} value={num(pub.data.totalMeals)} ico="🍛" />
+          <Stat label={t('totalBazar')} value={money(pub.data.totalBazar, cur)} ico="🛒" />
+          <Stat label={t('mealRate')} value={money(pub.data.mealRate, cur)} ico="📈" hl />
+          <Stat label={t('memberCount')} value={n2(pub.data.memberCount)} ico="👥" />
+        </div>
+      )}
+
+      {isManager && o && !o.archived && (
         <>
           <h3 className="mt">🏠 {t('manager')} — {t('allMembersAccount')}</h3>
           <div className="grid g4">

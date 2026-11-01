@@ -1,4 +1,5 @@
 import { emptyDb, todayStr, monthOf, pad } from './engine.js';
+import { ARCHIVES } from './archive.js';
 
 // Demo data so the site looks alive on first open.
 const PHOTOS = ['mehedi', 'tariqul', 'kawsar', 'robiul', 'ashik', 'anik', 'shakil'];
@@ -52,7 +53,8 @@ export async function seedDemo(hash) {
       createdAt: new Date().toISOString(),
     });
   });
-  // Public demo: no real financial records. The real ledger lives only on your own server.
+  // Public: mess-level totals only. Per-member ledger is imported privately by the manager.
+  db.archives = JSON.parse(JSON.stringify(ARCHIVES));
   db.members[0].managerSince = `${month}-01`;
   db.notifications.push({ id: 'n1', to: 'all', text: 'Welcome to Bachelor Home Management! 🎉', kind: 'notice', date: new Date().toISOString(), readBy: [] });
   return db;

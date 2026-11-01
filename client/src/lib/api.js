@@ -8,7 +8,7 @@ import { seedDemo } from './seed.js';
 const RAW = import.meta.env.VITE_API_URL || '';
 export const DEMO = !RAW;
 export const API_URL = RAW === 'same' ? '' : RAW.replace(/\/$/, '');
-const DB_KEY = 'bhm_db_v5';
+const DB_KEY = 'bhm_db_v6';
 const TOKEN_KEY = 'bhm_token';
 
 async function sha256(text) {

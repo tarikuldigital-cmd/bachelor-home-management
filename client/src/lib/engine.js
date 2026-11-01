@@ -54,6 +54,7 @@ export function emptyDb() {
     duties: [],
     notifications: [],
     smsLog: [],
+    archives: {}, // { 'YYYY-MM': { totalDeposit, memberCount, dailyMeals:[], bazar:[[day,amount,items]] } } — totals only
     managerHistory: [], // [{ memberId, name, from, to, note, by }]
   };
 }
@@ -123,7 +124,39 @@ export function effWeights(settings) {
   return settings.breakfastEnabled ? w : { ...w, b: 0 };
 }
 
+function hasRecords(db, month) {
+  return db.meals.some((x) => monthOf(x.date) === month) || db.bazar.some((x) => monthOf(x.date) === month);
+}
+function archiveOf(db, month) {
+  const a = db.archives && db.archives[month];
+  return a && !hasRecords(db, month) ? a : null;
+}
+export function archiveBazar(month, a) {
+  return (a.bazar || []).map(([d, amount, items], i) => ({ id: `ar-${month}-${i}`, date: `${month}-${pad(d)}`, items, amount, memberId: '', by: 'Mess fund' }));
+}
+// month with only summary totals (no per-member records)
+function computeArchive(db, month, a) {
+  const totalMeals = (a.dailyMeals || []).reduce((s, x) => s + x, 0);
+  const bz = archiveBazar(month, a);
+  const totalBazar = bz.reduce((s, x) => s + x.amount, 0);
+  const rawRate = totalMeals ? totalBazar / totalMeals : 0;
+  const rr = db.settings.mealRateRound;
+  const mealRate = rr === 'round' ? Math.round(rawRate) : rr === 'ceil' ? Math.ceil(rawRate) : rawRate;
+  const days = daysInMonth(month);
+  const daily = [];
+  for (let d = 1; d <= days; d++) {
+    const date = `${month}-${pad(d)}`;
+    daily.push({ date, meals: a.dailyMeals?.[d - 1] || 0, bazar: bz.filter((x) => x.date === date).reduce((s, x) => s + x.amount, 0) });
+  }
+  return {
+    month, archived: true, totalMeals, totalBazar, mealRate: round2(mealRate), mealRateExact: round2(rawRate),
+    totalBills: 0, billsByType: {}, totalDeposit: a.totalDeposit || 0, memberCount: a.memberCount || 0, rows: [], daily, bills: [],
+  };
+}
+
 export function computeMonth(db, month) {
+  const arch = archiveOf(db, month);
+  if (arch) return computeArchive(db, month, arch);
   const w = effWeights(db.settings);
   const meals = db.meals.filter((x) => monthOf(x.date) === month);
   const bazar = db.bazar.filter((x) => monthOf(x.date) === month);
@@ -284,7 +317,8 @@ export function createEngine(store, adapter) {
       mealRate: c.mealRate,
       memberCount: c.memberCount,
       daily: c.daily,
-      bazar: db.bazar
+      archived: !!archiveOf(db, month),
+      bazar: (archiveOf(db, month) ? archiveBazar(month, archiveOf(db, month)) : db.bazar)
         .filter((x) => monthOf(x.date) === month)
         .sort((a, b) => b.date.localeCompare(a.date))
         .map((x) => ({ id: x.id, date: x.date, items: x.items, amount: x.amount, by: db.members.find((m) => m.id === x.memberId)?.name || 'Mess fund' })),
@@ -307,7 +341,7 @@ export function createEngine(store, adapter) {
   // current month if it has data, otherwise the latest month that has data
   function defaultMonth(db) {
     const cur = monthOf(todayStr());
-    const has = (m) => db.meals.some((x) => monthOf(x.date) === m) || db.bazar.some((x) => monthOf(x.date) === m);
+    const has = (m) => hasRecords(db, m) || !!(db.archives && db.archives[m]);
     if (has(cur)) return cur;
     const list = allMonths(db).filter(has);
     return list[0] || cur;
@@ -324,6 +358,7 @@ export function createEngine(store, adapter) {
   }
   function allMonths(db) {
     const set = new Set(lastMonths(12));
+    Object.keys(db.archives || {}).forEach((m) => set.add(m));
     db.meals.forEach((x) => set.add(monthOf(x.date)));
     db.bazar.forEach((x) => set.add(monthOf(x.date)));
     db.bills.forEach((x) => set.add(x.month));
@@ -494,6 +529,7 @@ export function createEngine(store, adapter) {
   // bazar
   def('listBazar', 'member', (db, p) => {
     const month = p.month || defaultMonth(db);
+    if (archiveOf(db, month)) return archiveBazar(month, archiveOf(db, month));
     return db.bazar
       .filter((x) => monthOf(x.date) === month)
       .sort((a, b) => b.date.localeCompare(a.date))
