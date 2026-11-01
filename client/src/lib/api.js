@@ -5,9 +5,30 @@ import { seedDemo } from './seed.js';
 
 // VITE_API_URL=same  -> API on the same domain (server/index.js also serves the site)
 // VITE_API_URL=https://api.example.com -> separate API server
+// No VITE_API_URL -> detect at startup: if this site has the Node server (/api/health), use it;
+// otherwise (GitHub Pages) run the demo engine in the browser.
 const RAW = import.meta.env.VITE_API_URL || '';
-export const DEMO = !RAW;
-export const API_URL = RAW === 'same' ? '' : RAW.replace(/\/$/, '');
+export let DEMO = !RAW;
+export let API_URL = RAW === 'same' ? '' : RAW.replace(/\/$/, '');
+
+export async function detectServer() {
+  if (RAW) return !DEMO;
+  if (window.Capacitor) return false;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2500);
+    const r = await fetch('/api/health', { signal: ctrl.signal, cache: 'no-store' });
+    clearTimeout(timer);
+    const j = r.ok ? await r.json() : null;
+    if (j && j.ok) {
+      DEMO = false;
+      API_URL = '';
+    }
+  } catch {
+    /* no server here: demo mode */
+  }
+  return !DEMO;
+}
 const DB_KEY = 'bhm_db_v6';
 const TOKEN_KEY = 'bhm_token';
 
