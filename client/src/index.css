@@ -259,3 +259,10 @@ footer.foot { color: var(--muted); font-size: 13px; text-align: center; padding:
 .meal-step { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 @media (max-width: 560px) { .meal-row > .row { width: 100%; } .meal-steps { width: 100%; justify-content: space-between; } }
 .stat.hl.hl-red { background: linear-gradient(135deg, #7f1d1d, #b91c1c 60%, #f43f5e); }
+
+.rules-alert { border-radius: var(--radius); padding: 18px 20px; background: var(--warn-soft); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 5px solid var(--warn); }
+.rules-alert h3 { color: var(--warn); font-size: 17px; }
+.rules-list { margin: 0; padding-left: 22px; display: grid; gap: 7px; }
+.rules-list li { line-height: 1.55; }
+.rules-list li::marker { color: var(--warn); font-weight: 700; }
+@media (min-width: 900px) { .rules-list { grid-template-columns: 1fr 1fr; column-gap: 32px; } }

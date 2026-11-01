@@ -4,6 +4,24 @@
 
 export const BILL_TYPES = ['electricity', 'wifi', 'buya', 'garbage', 'gas', 'water', 'rent', 'other'];
 
+// Common bachelor-mess rules (manager can edit in Settings). Each rule: { en, bn }
+export const DEFAULT_RULES = [
+  { en: "Update tomorrow's meal (on/off) in the app before 10 PM tonight.", bn: 'আগামীকালের মিল (চালু/বন্ধ) আজ রাত ১০টার মধ্যে অ্যাপে আপডেট করুন।' },
+  { en: 'Pay your meal deposit by the 5th of every month.', bn: 'প্রতি মাসের ৫ তারিখের মধ্যে মিলের টাকা জমা দিন।' },
+  { en: 'Pay service charges (electricity, Wi-Fi, maid, garbage, gas) by the 10th of every month.', bn: 'সার্ভিস চার্জ (বিদ্যুৎ, ওয়াইফাই, বুয়া, ময়লা, গ্যাস) প্রতি মাসের ১০ তারিখের মধ্যে পরিশোধ করুন।' },
+  { en: 'Do bazar on your assigned duty day and enter the cost in the app the same day.', bn: 'নিজের বাজার ডিউটির দিনে বাজার করুন এবং সেদিনই খরচ অ্যাপে লিখে দিন।' },
+  { en: 'Keep the kitchen, washroom and common areas clean. Wash your own plates and glasses.', bn: 'রান্নাঘর, বাথরুম ও কমন জায়গা পরিষ্কার রাখুন। নিজের প্লেট-গ্লাস নিজে ধুয়ে রাখুন।' },
+  { en: 'Save electricity, water and gas. Switch off lights, fans and AC when you leave the room.', bn: 'বিদ্যুৎ, পানি ও গ্যাস অপচয় করবেন না। রুম থেকে বের হলে লাইট-ফ্যান-এসি বন্ধ করুন।' },
+  { en: 'No loud music or noise after 11 PM. Respect others’ study and sleep.', bn: 'রাত ১১টার পর জোরে গান বা শব্দ করা যাবে না। অন্যের পড়াশোনা ও ঘুমের প্রতি সম্মান রাখুন।' },
+  { en: 'The main gate closes at 11:30 PM. Inform the manager if you will be late.', bn: 'রাত ১১:৩০-এ মেইন গেট বন্ধ হয়। দেরি হলে আগে ম্যানেজারকে জানান।' },
+  { en: 'Inform the manager before bringing a guest. Guest meals are charged to the host. No overnight guests without permission.', bn: 'অতিথি আনার আগে ম্যানেজারকে জানান। অতিথির মিলের টাকা যিনি এনেছেন তিনি দেবেন। অনুমতি ছাড়া রাতে অতিথি রাখা যাবে না।' },
+  { en: 'Smoking inside the house, drugs and gambling are strictly prohibited.', bn: 'বাসার ভিতরে ধূমপান, মাদক ও জুয়া সম্পূর্ণ নিষিদ্ধ।' },
+  { en: 'Do not use anyone else’s belongings without permission.', bn: 'অনুমতি ছাড়া অন্যের জিনিস ব্যবহার করবেন না।' },
+  { en: 'Throw garbage in the bin every day. Do not keep leftover food in rooms.', bn: 'প্রতিদিন ময়লা নির্দিষ্ট ঝুড়িতে ফেলুন। রুমে বাসি খাবার রাখবেন না।' },
+  { en: 'Report any damage or repair need to the manager immediately.', bn: 'কোনো কিছু নষ্ট হলে বা মেরামত লাগলে সাথে সাথে ম্যানেজারকে জানান।' },
+  { en: 'To leave the mess, give one month’s notice and clear all dues.', bn: 'মেস ছাড়তে চাইলে এক মাস আগে জানাতে হবে এবং সব বকেয়া পরিশোধ করতে হবে।' },
+];
+
 export function emptyDb() {
   return {
     version: 1,
@@ -13,6 +31,7 @@ export function emptyDb() {
       currency: '৳',
       weights: { b: 0.5, l: 1, d: 1 },
       breakfastEnabled: false, // two meals a day: lunch + dinner
+      rules: DEFAULT_RULES,
       membersCanEditMeals: true,
       membersCanAddBazar: true,
       mealLockHour: 22, // members can edit tomorrow's meal until this hour today
@@ -270,6 +289,7 @@ export function createEngine(store, adapter) {
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(0, 7)
         .map((x) => ({ date: x.date, name: db.members.find((m) => m.id === x.memberId)?.name || '' })),
+      rules: Array.isArray(db.settings.rules) ? db.settings.rules : DEFAULT_RULES,
       months: allMonths(db),
     };
   });
@@ -755,13 +775,14 @@ export function createEngine(store, adapter) {
     return { ok: true };
   });
 
-  def('getSettings', 'manager', (db) => db.settings);
+  def('getSettings', 'manager', (db) => ({ ...db.settings, rules: Array.isArray(db.settings.rules) ? db.settings.rules : DEFAULT_RULES }));
   def('saveSettings', 'manager', (db, p) => {
     const s = db.settings;
     const keys = ['breakfastEnabled', 'messName', 'address', 'currency', 'cookName', 'cookPhone', 'dueSmsTemplate', 'menuSmsTemplate', 'dutySmsTemplate', 'membersCanEditMeals', 'membersCanAddBazar', 'mealLockHour'];
     keys.forEach((k) => {
       if (p[k] !== undefined) s[k] = p[k];
     });
+    if (Array.isArray(p.rules)) s.rules = p.rules.map((r) => ({ en: String(r.en || '').slice(0, 300), bn: String(r.bn || '').slice(0, 300) })).filter((r) => r.en || r.bn);
     if (p.weights) s.weights = { b: num(p.weights.b), l: num(p.weights.l), d: num(p.weights.d) };
     return s;
   });

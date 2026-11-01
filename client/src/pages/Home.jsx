@@ -6,6 +6,28 @@ import { money, num, monthLabel, dateLabel } from '../lib/util.js';
 import { monthOf, todayStr } from '../lib/engine.js';
 import { Brand, Stat, MonthPicker, Bars, Empty, Spinner, useApi } from '../components/ui.jsx';
 import { useAuth, usePrefs } from '../App.jsx';
+import { getLang } from '../lib/i18n.js';
+
+export function RulesAlert({ rules }) {
+  if (!rules || !rules.length) return null;
+  const lang = getLang();
+  return (
+    <div className="rules-alert mt">
+      <div className="row" style={{ gap: 10, marginBottom: 10, flexWrap: 'nowrap' }}>
+        <span style={{ fontSize: 24 }}>📜</span>
+        <div>
+          <h3>{t('messRules')}</h3>
+          <div className="small muted">{t('rulesNote')}</div>
+        </div>
+      </div>
+      <ol className="rules-list">
+        {rules.map((r, i) => (
+          <li key={i}>{(lang === 'bn' ? r.bn : r.en) || r.en || r.bn}</li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 export function MenuCard({ title, menu, badge }) {
   return (
@@ -188,6 +210,8 @@ export default function Home() {
                 <Empty />
               )}
             </div>
+
+            <RulesAlert rules={data.rules} />
 
             <div className="alert green mt">
               <span style={{ fontSize: 22 }}>🔒</span>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, DEMO, resetDemo } from '../lib/api.js';
 import { t } from '../lib/i18n.js';
 import { download } from '../lib/util.js';
-import { mealSlots, SLOT_KEY } from '../lib/engine.js';
+import { mealSlots, SLOT_KEY, DEFAULT_RULES } from '../lib/engine.js';
 import { Field, useApi, useToast } from '../components/ui.jsx';
 import { useAuth, usePrefs } from '../App.jsx';
 
@@ -160,6 +160,39 @@ function MessSettings() {
           <Field label={`${t('bazarDuty')} — {name} {date} {mess}`}>
             <textarea className="input" value={f.dutySmsTemplate} onChange={set('dutySmsTemplate')} />
           </Field>
+        </div>
+        <button className="btn primary mt" onClick={save}>
+          {t('save')}
+        </button>
+      </div>
+
+      <div className="card">
+        <div className="card-head">
+          <h3>📜 {t('messRules')}</h3>
+          <div className="row" style={{ gap: 6 }}>
+            <button className="btn sm" onClick={() => setF({ ...f, rules: DEFAULT_RULES })}>
+              ↺ {t('resetRules')}
+            </button>
+            <button className="btn sm primary" onClick={() => setF({ ...f, rules: [...(f.rules || []), { en: '', bn: '' }] })}>
+              ＋ {t('addRule')}
+            </button>
+          </div>
+        </div>
+        <div className="grid" style={{ gap: 10 }}>
+          {(f.rules || []).map((r, i) => (
+            <div key={i} className="row" style={{ alignItems: 'flex-start', flexWrap: 'nowrap' }}>
+              <span className="badge amber" style={{ marginTop: 8 }}>
+                {i + 1}
+              </span>
+              <div className="grid grow" style={{ gap: 6 }}>
+                <input className="input" placeholder="English" value={r.en} onChange={(e) => setF({ ...f, rules: f.rules.map((x, j) => (j === i ? { ...x, en: e.target.value } : x)) })} />
+                <input className="input" placeholder="বাংলা" value={r.bn} onChange={(e) => setF({ ...f, rules: f.rules.map((x, j) => (j === i ? { ...x, bn: e.target.value } : x)) })} />
+              </div>
+              <button className="btn sm ghost danger" style={{ marginTop: 4 }} onClick={() => setF({ ...f, rules: f.rules.filter((_, j) => j !== i) })}>
+                🗑
+              </button>
+            </div>
+          ))}
         </div>
         <button className="btn primary mt" onClick={save}>
           {t('save')}
