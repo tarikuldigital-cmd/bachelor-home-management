@@ -9,7 +9,7 @@ export async function seedDemo(hash) {
   db.settings.cookName = 'Cook';
   db.settings.cookPhone = '';
   db.settings.dueSmsTemplate = 'Dear {name}, your due at {mess} for {month} is Tk {due}. Please pay soon. Thank you.';
-  db.settings.menuSmsTemplate = "{cook}, tomorrow's menu ({date}):\n{menu}\nMeals: {meals}\n- {mess}";
+  db.settings.menuSmsTemplate = '{cook}, menu for {date}:\n{menu}\nMeals: {meals}\n- {mess}';
   db.settings.dutySmsTemplate = 'Dear {name}, you have bazar duty on {date}. - {mess}';
   // Public demo: only non-sensitive info (no phone, NID, address, DOB, blood group)
   const people = [

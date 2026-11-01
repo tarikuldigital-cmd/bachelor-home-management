@@ -65,7 +65,12 @@ npm start                       # http://localhost:4000
 
 আলাদা API সার্ভার চাইলে ফ্রন্টএন্ড এভাবে বিল্ড করুন: `VITE_API_URL=https://api.yourdomain.com npm --prefix client run build`, তারপর `client/dist` ফোল্ডারটা যেকোনো স্ট্যাটিক হোস্টিংয়ে আপলোড করুন।
 
-### SMS সেটআপ (`server/.env`)
+### SMS সেটআপ (`server/.env`) — ডিফল্ট গেটওয়ে Muthofun
+```
+SMS_PROVIDER=muthofun
+SMS_API_KEY=Token আপনার_key
+```
+BulkSMSBD ব্যবহার করলে:
 ```
 SMS_PROVIDER=bulksmsbd
 SMS_API_KEY=আপনার_api_key

@@ -1,9 +1,9 @@
-// SMS gateway. Default: BulkSMSBD (bulksmsbd.net) — popular in Bangladesh.
+// SMS gateway. Default: Muthofun / Muthobarta (sysadmin.muthobarta.com). Also supports BulkSMSBD.
 // Any other HTTP gateway works by setting SMS_URL_TEMPLATE with {number} and {message}.
 //
 // .env options:
-//   SMS_PROVIDER=bulksmsbd | template | none
-//   SMS_API_KEY=xxxxx
+//   SMS_PROVIDER=muthofun | bulksmsbd | template | none
+//   SMS_API_KEY=Token xxxxx   (Muthofun: the full 'Token ...' value from the Muthobarta panel)
 //   SMS_SENDER_ID=8809XXXXXXXXX
 //   SMS_URL_TEMPLATE=https://example.com/send?key=XXX&to={number}&msg={message}
 
@@ -16,7 +16,7 @@ export function normalizeBdNumber(n) {
 }
 
 export async function sendSms(number, message) {
-  const provider = (process.env.SMS_PROVIDER || 'bulksmsbd').toLowerCase();
+  const provider = (process.env.SMS_PROVIDER || 'muthofun').toLowerCase();
   const to = normalizeBdNumber(number);
   if (!to || to.length < 11) return { ok: false, info: 'invalid number' };
 
@@ -32,6 +32,27 @@ export async function sendSms(number, message) {
       const r = await fetch(url);
       const text = await r.text();
       return { ok: r.ok, info: text.slice(0, 200) };
+    }
+    if (provider === 'muthofun') {
+      let key = (process.env.SMS_API_KEY || '').trim();
+      if (!key) return { ok: false, info: 'SMS_API_KEY missing in .env' };
+      if (!/^token\s/i.test(key)) key = 'Token ' + key;
+      const body = { receiver: to.replace(/^88/, ''), message, remove_duplicate: true };
+      if (process.env.SMS_SENDER_ID) body.sender_id = process.env.SMS_SENDER_ID;
+      const r = await fetch('https://sysadmin.muthobarta.com/api/v1/send-sms', {
+        method: 'POST',
+        headers: { Authorization: key, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const text = await r.text();
+      let data = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        /* not json */
+      }
+      const ok = r.ok && (data.code === undefined || Number(data.code) === 200);
+      return { ok, info: data.message || data.detail || text.slice(0, 200) };
     }
     // BulkSMSBD
     const key = process.env.SMS_API_KEY;

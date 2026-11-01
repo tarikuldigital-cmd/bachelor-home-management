@@ -59,3 +59,11 @@ export function download(filename, text) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+
+// WhatsApp click-to-chat: opens WhatsApp with the message ready to send
+export function whatsappLink(number, message) {
+  let d = String(number || '').replace(/[^\d]/g, '');
+  if (d.startsWith('0')) d = '88' + d;
+  else if (d.length === 10 && d.startsWith('1')) d = '880' + d;
+  return `https://wa.me/${d}?text=${encodeURIComponent(message)}`;
+}

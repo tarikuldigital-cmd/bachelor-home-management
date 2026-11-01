@@ -41,7 +41,7 @@ export function emptyDb() {
       cookPhone: '',
       dueSmsTemplate:
         'Dear {name}, your due at {mess} for {month} is Tk {due}. Please pay soon. Thank you.',
-      menuSmsTemplate: "{cook}, tomorrow's menu ({date}):\n{menu}\nMeals: {meals}\n- {mess}",
+      menuSmsTemplate: '{cook}, menu for {date}:\n{menu}\nMeals: {meals}\n- {mess}',
       dutySmsTemplate: 'Dear {name}, you have bazar duty on {date}. - {mess}',
     },
     members: [],
@@ -447,6 +447,25 @@ export function createEngine(store, adapter) {
     return { ok: true };
   });
 
+  // tick / untick one meal slot for every active member
+  def('setMealsBulk', 'manager', (db, p, me) => {
+    validDate(p.date);
+    req(['b', 'l', 'd'].includes(p.slot), 'bad slot');
+    const v = Math.max(0, num(p.value || 0));
+    for (const m of db.members.filter((x) => x.active)) {
+      let e = db.meals.find((x) => x.memberId === m.id && x.date === p.date);
+      if (!e) {
+        if (!v) continue;
+        e = { id: uid(), memberId: m.id, date: p.date, b: 0, l: 0, d: 0 };
+        db.meals.push(e);
+      }
+      e[p.slot] = v;
+      e.by = me.id;
+    }
+    db.meals = db.meals.filter((x) => (Number(x.b) || 0) + (Number(x.l) || 0) + (Number(x.d) || 0) > 0);
+    return { ok: true };
+  });
+
   def('applyDefaultMeals', 'manager', (db, p) => {
     validDate(p.date);
     let n = 0;
@@ -730,7 +749,8 @@ export function createEngine(store, adapter) {
     return w;
   }
   function mealCountText(db, c) {
-    return db.settings.breakfastEnabled ? `Breakfast ${c.b}, Lunch ${c.l}, Dinner ${c.d}` : `Lunch ${c.l}, Dinner ${c.d}`;
+    const total = (db.settings.breakfastEnabled ? c.b : 0) + c.l + c.d;
+    return (db.settings.breakfastEnabled ? `Breakfast ${c.b}, ` : '') + `Lunch ${c.l}, Dinner ${c.d} (Total ${total})`;
   }
   def('menuSmsPreview', 'manager', (db, p) => {
     const menu = db.menus.find((x) => x.date === p.date);
