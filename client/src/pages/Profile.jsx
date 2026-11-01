@@ -5,7 +5,7 @@ import { t, n2 } from '../lib/i18n.js';
 import { money, num, dateLabel, resizeImage } from '../lib/util.js';
 import { monthOf, todayStr, mealSlots, SLOT_KEY } from '../lib/engine.js';
 import { Avatar, MonthPicker, Spinner, useApi, Empty, useToast } from '../components/ui.jsx';
-import { AccountStats, DueAlert, DepositList } from '../components/Account.jsx';
+import { AccountStats, DueAlert, DepositList, Statement } from '../components/Account.jsx';
 import { useAuth } from '../App.jsx';
 import { MemberForm } from './Members.jsx';
 
@@ -145,6 +145,7 @@ export default function Profile() {
 
       <DueAlert stats={d.stats} cur={cur} month={month} />
       <AccountStats d={d} cur={cur} />
+      <Statement d={d} cur={cur} />
 
       {d.duties.length > 0 && (
         <div className="alert amber">

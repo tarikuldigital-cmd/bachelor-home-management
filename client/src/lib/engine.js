@@ -413,7 +413,7 @@ export function createEngine(store, adapter) {
       member: publicMember(m),
       month,
       months: allMonths(db),
-      summary: { totalMeals: c.totalMeals, totalBazar: c.totalBazar, mealRate: c.mealRate, totalBills: c.totalBills, billsByType: c.billsByType, memberCount: c.memberCount },
+      summary: { totalMeals: c.totalMeals, totalBazar: c.totalBazar, mealRate: c.mealRate, mealRateExact: c.mealRateExact, rounding: db.settings.mealRateRound || 'none', totalBills: c.totalBills, billsByType: c.billsByType, memberCount: c.memberCount },
       stats: row,
       meals: db.meals
         .filter((x) => x.memberId === id && monthOf(x.date) === month)

@@ -108,6 +108,113 @@ export function AccountStats({ d, cur }) {
   );
 }
 
+// Step-by-step statement: how the meal rate, my cost, my deposits and my result are calculated
+export function Statement({ d, cur }) {
+  const s = d.stats;
+  if (!s) return null;
+  const sum = d.summary;
+  const mealDeps = [...d.deposits].filter((x) => x.type !== 'service').sort((a, b) => a.date.localeCompare(b.date));
+  const svcDeps = [...d.deposits].filter((x) => x.type === 'service').sort((a, b) => a.date.localeCompare(b.date));
+  let run = 0;
+  const rounded = sum.rounding !== 'none' && sum.mealRateExact !== sum.mealRate;
+  return (
+    <div className="card statement">
+      <div className="card-head">
+        <h3>📒 {t('myStatement')}</h3>
+        <span className="small muted">{monthLabel(d.month)}</span>
+      </div>
+
+      <div className="st-step">
+        <span className="st-n">1</span>
+        <div className="grow">
+          <div className="st-t">{t('stRate')}</div>
+          <div className="st-eq">
+            {money(sum.totalBazar, cur)} <span className="muted">{t('totalBazar')}</span> ÷ {num(sum.totalMeals)} <span className="muted">{t('totalMeals')}</span> ={' '}
+            <b>{money(sum.mealRate, cur)}</b>
+            {rounded && <span className="tiny muted"> ({money(sum.mealRateExact, cur)} → {t('rounded')})</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="st-step">
+        <span className="st-n">2</span>
+        <div className="grow">
+          <div className="st-t">{t('stCost')}</div>
+          <div className="st-eq">
+            {num(s.mealCount)} <span className="muted">{t('myMeals')}</span> × {money(sum.mealRate, cur)} = <b>{money(s.mealCost, cur)}</b>
+          </div>
+        </div>
+      </div>
+
+      <div className="st-step">
+        <span className="st-n">3</span>
+        <div className="grow">
+          <div className="st-t">{t('stDeposits')}</div>
+          {mealDeps.length ? (
+            <table className="st-table">
+              <thead>
+                <tr>
+                  <th>{t('date')}</th>
+                  <th>{t('note')}</th>
+                  <th className="num">{t('amount')}</th>
+                  <th className="num">{t('runningTotal')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mealDeps.map((x) => {
+                  run += Number(x.amount);
+                  return (
+                    <tr key={x.id}>
+                      <td>{dateLabel(x.date)}</td>
+                      <td className="muted">{x.note}</td>
+                      <td className="num">{money(x.amount, cur)}</td>
+                      <td className="num bold">{money(run, cur)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div className="small muted">{t('noDeposits')}</div>
+          )}
+          <div className="st-eq mt">
+            {t('mealDeposit')}: <b>{money(s.mealDeposit, cur)}</b>
+          </div>
+        </div>
+      </div>
+
+      <div className="st-step">
+        <span className="st-n">4</span>
+        <div className="grow">
+          <div className="st-t">{t('stResult')}</div>
+          <div className="st-eq">
+            {money(s.mealDeposit, cur)} − {money(s.mealCost, cur)} ={' '}
+            <b className={s.mealBalance >= 0 ? 'pos' : 'neg'}>{money(s.mealBalance, cur)}</b>
+          </div>
+          <div className={`st-final ${s.mealBalance > 0.004 ? 'pos' : s.mealBalance < -0.004 ? 'neg' : 'ok'}`}>
+            {s.mealBalance > 0.004 ? `🎉 ${t('youGetBack')} ${money(s.mealBalance, cur)}` : s.mealBalance < -0.004 ? `⏳ ${t('youMustPay')} ${money(-s.mealBalance, cur)}` : `✓ ${t('settled')}`}
+          </div>
+        </div>
+      </div>
+
+      {(s.serviceCharge > 0 || svcDeps.length > 0) && (
+        <div className="st-service">
+          <div className="st-t">🧾 {t('serviceAccount')}</div>
+          <div className="st-eq">
+            {t('yourShare')} {money(s.serviceCharge, cur)} − {t('serviceDeposit')} {money(s.serviceDeposit, cur)} ={' '}
+            <b className={s.serviceDue > 0 ? 'neg' : 'pos'}>{s.serviceDue > 0 ? `${t('serviceDue')} ${money(s.serviceDue, cur)}` : s.serviceAdvance > 0 ? `${t('advance')} ${money(s.serviceAdvance, cur)}` : t('settled')}</b>
+          </div>
+          {svcDeps.length > 0 && (
+            <div className="tiny muted mt">
+              {svcDeps.map((x) => `${dateLabel(x.date)}: ${money(x.amount, cur)}`).join(' · ')}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FragmentRow({ k, v, sub }) {
   return (
     <>
