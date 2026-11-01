@@ -92,6 +92,24 @@ export default function Profile() {
               <span>{m.email}</span>
             </>
           )}
+          {m.district && (
+            <>
+              <span className="k">{t('district')}</span>
+              <span>{m.district}</span>
+            </>
+          )}
+          {m.bloodGroup && (
+            <>
+              <span className="k">{t('bloodGroup')}</span>
+              <span>{m.bloodGroup}</span>
+            </>
+          )}
+          {m.dob && (
+            <>
+              <span className="k">{t('dob')}</span>
+              <span>{m.dob}</span>
+            </>
+          )}
           {m.joinDate && (
             <>
               <span className="k">{t('joinDate')}</span>

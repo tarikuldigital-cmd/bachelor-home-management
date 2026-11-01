@@ -5,6 +5,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { createAuth } from './auth.js';
 import { fileURLToPath } from 'node:url';
 import { createEngine, emptyDb, AppError } from '../client/src/lib/engine.js';
 import { sendSms } from './sms.js';
@@ -28,36 +29,7 @@ function loadEnv(file) {
   }
 }
 
-// ---------- crypto ----------
-const b64u = (buf) => Buffer.from(buf).toString('base64url');
-const adapter = {
-  async hash(pw) {
-    const salt = crypto.randomBytes(16);
-    const key = crypto.scryptSync(pw, salt, 32);
-    return `scrypt:${b64u(salt)}:${b64u(key)}`;
-  },
-  async verify(pw, stored) {
-    const [kind, s, k] = String(stored || '').split(':');
-    if (kind !== 'scrypt') return false;
-    const key = crypto.scryptSync(pw, Buffer.from(s, 'base64url'), 32);
-    const want = Buffer.from(k, 'base64url');
-    return key.length === want.length && crypto.timingSafeEqual(key, want);
-  },
-  sign(payload) {
-    const body = b64u(JSON.stringify({ ...payload, exp: Date.now() + 1000 * 60 * 60 * 24 * 60 }));
-    const sig = b64u(crypto.createHmac('sha256', SECRET).update(body).digest());
-    return `${body}.${sig}`;
-  },
-  verifyToken(token) {
-    const [body, sig] = String(token).split('.');
-    if (!body || !sig) return null;
-    const want = b64u(crypto.createHmac('sha256', SECRET).update(body).digest());
-    if (sig.length !== want.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(want))) return null;
-    const p = JSON.parse(Buffer.from(body, 'base64url').toString());
-    return p.exp > Date.now() ? p : null;
-  },
-  sendSms,
-};
+const adapter = { ...createAuth(SECRET), sendSms };
 
 // ---------- storage ----------
 let cache = null;
@@ -158,7 +130,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const action = m[1];
       const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
-      if (action === 'login' && limited(ip)) throw new AppError('forbidden', 'অনেকবার চেষ্টা করা হয়েছে, ১০ মিনিট পর আবার চেষ্টা করুন');
+      if (action === 'login' && limited(ip)) throw new AppError('forbidden', 'Too many attempts, try again in 10 minutes');
       const body = await readBody(req);
       const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '') || null;
       const result = await engine.call(action, body, token);

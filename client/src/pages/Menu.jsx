@@ -178,7 +178,7 @@ export default function Menu() {
               </Field>
             ))}
             <Field label={t('note')}>
-              <input className="input" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="ঝাল কম, অতিথি ২ জন..." />
+              <input className="input" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Less spicy, 2 guests..." />
             </Field>
           </div>
         </Modal>

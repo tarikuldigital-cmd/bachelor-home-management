@@ -146,7 +146,7 @@ export default function Sms() {
                   </label>
                 ))}
             </div>
-            <textarea className="input" rows={4} placeholder={`${t('message')} ({name} = নাম)`} value={custom.message} onChange={(e) => setCustom({ ...custom, message: e.target.value })} />
+            <textarea className="input" rows={4} placeholder={`${t('message')} ({name} = member name)`} value={custom.message} onChange={(e) => setCustom({ ...custom, message: e.target.value })} />
             <div className="tiny muted">{n2(custom.message.length)} chars</div>
             <label className="check">
               <input type="checkbox" checked={custom.alsoNotify} onChange={(e) => setCustom({ ...custom, alsoNotify: e.target.checked })} /> 🔔 {t('notifications')}

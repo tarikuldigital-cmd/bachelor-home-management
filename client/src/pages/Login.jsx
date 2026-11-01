@@ -63,12 +63,12 @@ export default function Login() {
           {DEMO && (
             <div className="alert amber small mt">
               <div>
-                <b>Demo:</b> manager / 1234 · rahim / 1234
+                <b>Demo:</b> mehedi / 1234 ({t('manager')}) · tariqul / 1234 ({t('member')})
                 <div className="row mt" style={{ gap: 6 }}>
-                  <button className="btn sm" onClick={() => { setU('manager'); setP('1234'); }}>
+                  <button className="btn sm" onClick={() => { setU('mehedi'); setP('1234'); }}>
                     {t('manager')}
                   </button>
-                  <button className="btn sm" onClick={() => { setU('rahim'); setP('1234'); }}>
+                  <button className="btn sm" onClick={() => { setU('tariqul'); setP('1234'); }}>
                     {t('member')}
                   </button>
                 </div>

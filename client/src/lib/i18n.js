@@ -140,7 +140,10 @@ const D = {
   invoice: ['ইনভয়েস', 'Invoice'],
   print: ['প্রিন্ট / PDF', 'Print / PDF'],
   saved: ['সেভ হয়েছে', 'Saved'],
-  demoBanner: ['ডেমো মোড — ডাটা শুধু এই ব্রাউজারে থাকে। ম্যানেজার লগইন: manager / 1234, মেম্বার: rahim / 1234', 'Demo mode — data stays in this browser. Manager: manager / 1234, Member: rahim / 1234'],
+  demoBanner: ['ডেমো মোড — ডাটা শুধু এই ব্রাউজারে থাকে। ম্যানেজার লগইন: mehedi / 1234, মেম্বার: tariqul / 1234', 'Demo mode — data stays in this browser. Manager: mehedi / 1234, Member: tariqul / 1234'],
+  bloodGroup: ['রক্তের গ্রুপ', 'Blood group'],
+  dob: ['জন্ম তারিখ', 'Date of birth'],
+  district: ['জেলা', 'District'],
   autoDuty: ['স্বয়ংক্রিয় ডিউটি তালিকা', 'Auto duty roster'],
   everyDays: ['প্রতি কত দিন পর', 'Every N days'],
   remind: ['রিমাইন্ড', 'Remind'],
@@ -159,7 +162,7 @@ const D = {
   permissions: ['অনুমতি', 'Permissions'],
 };
 
-let lang = localStorage.getItem('bhm_lang') || 'bn';
+let lang = localStorage.getItem('bhm_lang') || 'en';
 export const getLang = () => lang;
 export function setLang(l) {
   lang = l;

@@ -18,9 +18,9 @@ export function emptyDb() {
       cookName: '',
       cookPhone: '',
       dueSmsTemplate:
-        'প্রিয় {name}, {mess} এ {month} মাসে আপনার বকেয়া {due} টাকা। অনুগ্রহ করে দ্রুত পরিশোধ করুন। ধন্যবাদ।',
-      menuSmsTemplate: '{cook}, আগামীকাল ({date}) এর মেনু:\n{menu}\nমোট মিল: {meals}\n- {mess}',
-      dutySmsTemplate: 'প্রিয় {name}, {date} তারিখে আপনার বাজার ডিউটি। - {mess}',
+        'Dear {name}, your due at {mess} for {month} is Tk {due}. Please pay soon. Thank you.',
+      menuSmsTemplate: "{cook}, tomorrow's menu ({date}):\n{menu}\nMeals: {meals}\n- {mess}",
+      dutySmsTemplate: 'Dear {name}, you have bazar duty on {date}. - {mess}',
     },
     members: [],
     meals: [],
@@ -65,7 +65,7 @@ function publicMember(m) {
   return rest;
 }
 function directoryMember(m) {
-  return { id: m.id, name: m.name, photo: m.photo, room: m.room, role: m.role, active: m.active };
+  return { id: m.id, name: m.name, photo: m.photo, room: m.room, role: m.role, active: m.active, profession: m.profession, district: m.district };
 }
 
 export function mealTotal(entry, weights) {
@@ -273,8 +273,8 @@ export function createEngine(store, adapter) {
   def('login', 'public', async (db, p) => {
     const u = String(p.username || '').trim().toLowerCase();
     const m = db.members.find((x) => x.username.toLowerCase() === u || (x.phone && x.phone === u));
-    if (!m || !(await adapter.verify(String(p.password || ''), m.passwordHash))) throw new AppError('bad_login', 'ভুল ইউজারনেম বা পাসওয়ার্ড');
-    if (!m.active) throw new AppError('inactive', 'এই অ্যাকাউন্টটি নিষ্ক্রিয়');
+    if (!m || !(await adapter.verify(String(p.password || ''), m.passwordHash))) throw new AppError('bad_login', 'Wrong username or password');
+    if (!m.active) throw new AppError('inactive', 'This account is inactive');
     const token = await adapter.sign({ uid: m.id, iat: Date.now() });
     return { token, user: publicMember(m) };
   });
@@ -299,9 +299,9 @@ export function createEngine(store, adapter) {
 
   def('memberDetail', 'member', (db, p, me) => {
     const id = p.memberId || me.id;
-    if (id !== me.id && me.role !== 'manager') throw new AppError('forbidden', 'শুধু নিজের প্রোফাইল দেখা যাবে');
+    if (id !== me.id && me.role !== 'manager') throw new AppError('forbidden', 'You can only view your own profile');
     const m = db.members.find((x) => x.id === id);
-    if (!m) throw new AppError('not_found', 'মেম্বার পাওয়া যায়নি');
+    if (!m) throw new AppError('not_found', 'Member not found');
     const month = p.month || monthOf(todayStr());
     const c = computeMonth(db, month);
     const row = c.rows.find((r) => r.memberId === id) || null;
@@ -339,8 +339,8 @@ export function createEngine(store, adapter) {
 
   def('changePassword', 'member', async (db, p, me) => {
     const m = db.members.find((x) => x.id === me.id);
-    if (!(await adapter.verify(String(p.oldPassword || ''), m.passwordHash))) throw new AppError('bad_password', 'পুরনো পাসওয়ার্ড ভুল');
-    req(String(p.newPassword || '').length >= 4, 'পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে');
+    if (!(await adapter.verify(String(p.oldPassword || ''), m.passwordHash))) throw new AppError('bad_password', 'Old password is wrong');
+    req(String(p.newPassword || '').length >= 4, 'Password must be at least 4 characters');
     m.passwordHash = await adapter.hash(String(p.newPassword));
     return { ok: true };
   });
@@ -380,7 +380,7 @@ export function createEngine(store, adapter) {
 
   def('setMeal', 'member', (db, p, me) => {
     validDate(p.date);
-    if (!canEditMeal(db, me, p.memberId, p.date)) throw new AppError('forbidden', 'এই মিল এখন পরিবর্তন করা যাবে না');
+    if (!canEditMeal(db, me, p.memberId, p.date)) throw new AppError('forbidden', 'This meal can no longer be changed');
     const vals = sanitizeMeals(p);
     let e = db.meals.find((x) => x.memberId === p.memberId && x.date === p.date);
     if (!e) {
@@ -405,7 +405,7 @@ export function createEngine(store, adapter) {
       db.meals.push({ id: uid(), memberId: m.id, date: p.date, b: d.b, l: d.l, d: d.d, by: 'template' });
       n++;
     }
-    notify(db, 'all', `${p.date} তারিখের মিল যোগ করা হয়েছে (${n} জন)`, 'meal');
+    notify(db, 'all', `Meals added for ${p.date} (${n} members)`, 'meal');
     return { added: n };
   });
 
@@ -419,21 +419,21 @@ export function createEngine(store, adapter) {
   });
   def('addBazar', 'member', (db, p, me) => {
     validDate(p.date);
-    if (me.role !== 'manager' && (!db.settings.membersCanAddBazar || p.memberId !== me.id)) throw new AppError('forbidden', 'অনুমতি নেই');
+    if (me.role !== 'manager' && (!db.settings.membersCanAddBazar || p.memberId !== me.id)) throw new AppError('forbidden', 'Not allowed');
     const amount = num(p.amount);
-    req(amount > 0, 'টাকার পরিমাণ দিন');
+    req(amount > 0, 'Enter an amount');
     const item = { id: uid(), date: p.date, memberId: p.memberId || me.id, items: String(p.items || '').slice(0, 500), amount, by: me.id, createdAt: new Date().toISOString() };
     if (p.id) {
       const e = db.bazar.find((x) => x.id === p.id);
       if (!e) throw new AppError('not_found');
       if (me.role !== 'manager' && e.memberId !== me.id) throw new AppError('forbidden');
       Object.assign(e, { date: item.date, memberId: item.memberId, items: item.items, amount });
-      notify(db, 'all', `বাজার খরচ আপডেট: ${item.date} — ${amount} টাকা`, 'bazar');
+      notify(db, 'all', `Bazar updated: ${item.date} — Tk ${amount}`, 'bazar');
       return e;
     }
     db.bazar.push(item);
     const who = db.members.find((m) => m.id === item.memberId)?.name || '';
-    notify(db, 'all', `নতুন বাজার: ${who} — ${amount} টাকা (${item.date})`, 'bazar');
+    notify(db, 'all', `New bazar: ${who} — Tk ${amount} (${item.date})`, 'bazar');
     return item;
   });
   def('deleteBazar', 'member', (db, p, me) => {
@@ -470,14 +470,14 @@ export function createEngine(store, adapter) {
 
   def('saveMember', 'manager', async (db, p) => {
     const username = String(p.username || '').trim().toLowerCase();
-    req(String(p.name || '').trim(), 'নাম দিন');
-    req(/^[a-z0-9_.]{3,30}$/.test(username), 'ইউজারনেম ৩-৩০ অক্ষর (a-z, 0-9, _ .)');
+    req(String(p.name || '').trim(), 'Enter a name');
+    req(/^[a-z0-9_.]{3,30}$/.test(username), 'Username: 3-30 characters (a-z, 0-9, _ .)');
     const dup = db.members.find((x) => x.username.toLowerCase() === username && x.id !== p.id);
-    if (dup) throw new AppError('duplicate', 'এই ইউজারনেম আগে থেকেই আছে');
+    if (dup) throw new AppError('duplicate', 'This username already exists');
     let m = p.id ? db.members.find((x) => x.id === p.id) : null;
     const isNew = !m;
     if (isNew) {
-      req(String(p.password || '').length >= 4, 'পাসওয়ার্ড কমপক্ষে ৪ অক্ষর');
+      req(String(p.password || '').length >= 4, 'Password must be at least 4 characters');
       m = { id: uid(), role: 'member', active: true, createdAt: new Date().toISOString(), defaultMeals: { b: 1, l: 1, d: 1 } };
       db.members.push(m);
     }
@@ -491,6 +491,9 @@ export function createEngine(store, adapter) {
       address: String(p.address || '').trim(),
       nid: String(p.nid || '').trim(),
       emergencyContact: String(p.emergencyContact || '').trim(),
+      bloodGroup: String(p.bloodGroup || '').trim(),
+      dob: p.dob || '',
+      district: String(p.district || '').trim(),
       joinDate: p.joinDate || m.joinDate || todayStr(),
       leaveDate: p.leaveDate || '',
       active: p.active !== undefined ? !!p.active : m.active,
@@ -498,12 +501,12 @@ export function createEngine(store, adapter) {
     if (p.photo !== undefined) m.photo = p.photo;
     if (p.defaultMeals) m.defaultMeals = sanitizeMeals(p.defaultMeals);
     if (p.password) m.passwordHash = await adapter.hash(String(p.password));
-    if (isNew) notify(db, 'all', `নতুন মেম্বার যোগ হয়েছেন: ${m.name}`, 'member');
+    if (isNew) notify(db, 'all', `New member joined: ${m.name}`, 'member');
     return publicMember(m);
   });
 
   def('deleteMember', 'manager', (db, p, me) => {
-    if (p.id === me.id) throw new AppError('bad_request', 'নিজেকে মুছে ফেলা যাবে না');
+    if (p.id === me.id) throw new AppError('bad_request', 'You cannot delete yourself');
     const hasData = db.meals.some((x) => x.memberId === p.id) || db.deposits.some((x) => x.memberId === p.id) || db.bazar.some((x) => x.memberId === p.id);
     const m = db.members.find((x) => x.id === p.id);
     if (!m) throw new AppError('not_found');
@@ -522,7 +525,7 @@ export function createEngine(store, adapter) {
     if (!m) throw new AppError('not_found');
     db.members.find((x) => x.id === me.id).role = 'member';
     m.role = 'manager';
-    notify(db, 'all', `নতুন ম্যানেজার: ${m.name}`, 'member');
+    notify(db, 'all', `New manager: ${m.name}`, 'member');
     return { ok: true };
   });
 
@@ -536,8 +539,8 @@ export function createEngine(store, adapter) {
   def('saveDeposit', 'manager', (db, p, me) => {
     validDate(p.date);
     const amount = num(p.amount);
-    req(amount !== 0, 'টাকার পরিমাণ দিন');
-    req(db.members.some((m) => m.id === p.memberId), 'মেম্বার নির্বাচন করুন');
+    req(amount !== 0, 'Enter an amount');
+    req(db.members.some((m) => m.id === p.memberId), 'Select a member');
     const type = p.type === 'service' ? 'service' : 'meal';
     if (p.id) {
       const e = db.deposits.find((x) => x.id === p.id);
@@ -547,7 +550,7 @@ export function createEngine(store, adapter) {
     }
     const d = { id: uid(), date: p.date, memberId: p.memberId, amount, type, note: String(p.note || ''), by: me.id, createdAt: new Date().toISOString() };
     db.deposits.push(d);
-    notify(db, p.memberId, `আপনার ${type === 'service' ? 'সার্ভিস চার্জ' : 'মিল'} জমা ${amount} টাকা গ্রহণ করা হয়েছে (${p.date})`, 'deposit');
+    notify(db, p.memberId, `Your ${type === 'service' ? 'service charge' : 'meal'} deposit of Tk ${amount} was received (${p.date})`, 'deposit');
     return d;
   });
   def('deleteDeposit', 'manager', (db, p) => {
@@ -560,10 +563,10 @@ export function createEngine(store, adapter) {
     return db.bills.filter((x) => x.month === month);
   });
   def('saveBill', 'manager', (db, p, me) => {
-    req(/^\d{4}-\d{2}$/.test(p.month), 'মাস দিন');
-    req(BILL_TYPES.includes(p.type), 'ধরন নির্বাচন করুন');
+    req(/^\d{4}-\d{2}$/.test(p.month), 'Select a month');
+    req(BILL_TYPES.includes(p.type), 'Select a type');
     const amount = num(p.amount);
-    req(amount > 0, 'টাকার পরিমাণ দিন');
+    req(amount > 0, 'Enter an amount');
     const data = { month: p.month, type: p.type, amount, note: String(p.note || ''), memberIds: Array.isArray(p.memberIds) ? p.memberIds : [] };
     if (p.id) {
       const e = db.bills.find((x) => x.id === p.id);
@@ -573,7 +576,7 @@ export function createEngine(store, adapter) {
     }
     const b = { id: uid(), ...data, by: me.id, createdAt: new Date().toISOString() };
     db.bills.push(b);
-    notify(db, 'all', `সার্ভিস চার্জ যোগ হয়েছে (${p.month})`, 'bill');
+    notify(db, 'all', `Service charge added (${p.month})`, 'bill');
     return b;
   });
   def('deleteBill', 'manager', (db, p) => {
@@ -583,11 +586,11 @@ export function createEngine(store, adapter) {
 
   def('saveDuty', 'manager', (db, p) => {
     validDate(p.date);
-    req(db.members.some((m) => m.id === p.memberId), 'মেম্বার নির্বাচন করুন');
+    req(db.members.some((m) => m.id === p.memberId), 'Select a member');
     db.duties = db.duties.filter((x) => x.date !== p.date);
     const d = { id: uid(), date: p.date, memberId: p.memberId, note: String(p.note || '') };
     db.duties.push(d);
-    notify(db, p.memberId, `${p.date} তারিখে আপনার বাজার ডিউটি`, 'duty');
+    notify(db, p.memberId, `You have bazar duty on ${p.date}`, 'duty');
     return d;
   });
   def('deleteDuty', 'manager', (db, p) => {
@@ -595,9 +598,9 @@ export function createEngine(store, adapter) {
     return { ok: true };
   });
   def('autoDuties', 'manager', (db, p) => {
-    req(/^\d{4}-\d{2}$/.test(p.month), 'মাস দিন');
+    req(/^\d{4}-\d{2}$/.test(p.month), 'Select a month');
     const active = db.members.filter((m) => m.active);
-    req(active.length, 'কোনো সক্রিয় মেম্বার নেই');
+    req(active.length, 'No active members');
     const every = Math.max(1, Number(p.everyDays) || 2);
     const days = daysInMonth(p.month);
     db.duties = db.duties.filter((x) => monthOf(x.date) !== p.month);
@@ -606,7 +609,7 @@ export function createEngine(store, adapter) {
       db.duties.push({ id: uid(), date: `${p.month}-${pad(d)}`, memberId: active[i % active.length].id, note: '' });
       i++;
     }
-    notify(db, 'all', `${p.month} মাসের বাজার ডিউটি তালিকা তৈরি হয়েছে`, 'duty');
+    notify(db, 'all', `Bazar duty roster created for ${p.month}`, 'duty');
     return { created: i };
   });
   def('sendDutyReminder', 'manager', async (db, p) => {
@@ -614,7 +617,7 @@ export function createEngine(store, adapter) {
     if (!d) throw new AppError('not_found');
     const m = db.members.find((x) => x.id === d.memberId);
     const msg = fill(db.settings.dutySmsTemplate, { name: m.name, date: d.date, mess: db.settings.messName });
-    notify(db, m.id, `রিমাইন্ডার: ${d.date} তারিখে আপনার বাজার ডিউটি`, 'duty');
+    notify(db, m.id, `Reminder: you have bazar duty on ${d.date}`, 'duty');
     return sms(db, m.id, m.phone, msg, 'duty');
   });
 
@@ -626,7 +629,7 @@ export function createEngine(store, adapter) {
       e = { id: uid(), date: p.date, ...data, by: me.id };
       db.menus.push(e);
     } else Object.assign(e, data);
-    notify(db, 'all', `${p.date} তারিখের মেনু আপডেট হয়েছে`, 'menu');
+    notify(db, 'all', `Menu updated for ${p.date}`, 'menu');
     return e;
   });
   def('deleteMenu', 'manager', (db, p) => {
@@ -636,10 +639,10 @@ export function createEngine(store, adapter) {
 
   function menuText(db, menu) {
     const lines = [];
-    if (menu.breakfast) lines.push(`সকাল: ${menu.breakfast}`);
-    if (menu.lunch) lines.push(`দুপুর: ${menu.lunch}`);
-    if (menu.dinner) lines.push(`রাত: ${menu.dinner}`);
-    if (menu.note) lines.push(`নোট: ${menu.note}`);
+    if (menu.breakfast) lines.push(`Breakfast: ${menu.breakfast}`);
+    if (menu.lunch) lines.push(`Lunch: ${menu.lunch}`);
+    if (menu.dinner) lines.push(`Dinner: ${menu.dinner}`);
+    if (menu.note) lines.push(`Note: ${menu.note}`);
     return lines.join('\n');
   }
   function mealCountsFor(db, date) {
@@ -653,29 +656,29 @@ export function createEngine(store, adapter) {
   }
   def('menuSmsPreview', 'manager', (db, p) => {
     const menu = db.menus.find((x) => x.date === p.date);
-    if (!menu) throw new AppError('not_found', 'এই তারিখের মেনু নেই');
+    if (!menu) throw new AppError('not_found', 'No menu for this date');
     const c = mealCountsFor(db, p.date);
     const message = fill(db.settings.menuSmsTemplate, {
-      cook: db.settings.cookName || 'বাবুর্চি',
+      cook: db.settings.cookName || 'Cook',
       date: p.date,
       menu: menuText(db, menu),
-      meals: `সকাল ${c.b}, দুপুর ${c.l}, রাত ${c.d}`,
+      meals: `Breakfast ${c.b}, Lunch ${c.l}, Dinner ${c.d}`,
       mess: db.settings.messName,
     });
     return { number: db.settings.cookPhone, message };
   });
   def('sendMenuToCook', 'manager', async (db, p) => {
     const menu = db.menus.find((x) => x.date === p.date);
-    if (!menu) throw new AppError('not_found', 'এই তারিখের মেনু নেই');
-    req(db.settings.cookPhone, 'সেটিংসে বাবুর্চির মোবাইল নম্বর দিন');
+    if (!menu) throw new AppError('not_found', 'No menu for this date');
+    req(db.settings.cookPhone, 'Add the cook phone number in Settings');
     const c = mealCountsFor(db, p.date);
     const message =
       p.message ||
       fill(db.settings.menuSmsTemplate, {
-        cook: db.settings.cookName || 'বাবুর্চি',
+        cook: db.settings.cookName || 'Cook',
         date: p.date,
         menu: menuText(db, menu),
-        meals: `সকাল ${c.b}, দুপুর ${c.l}, রাত ${c.d}`,
+        meals: `Breakfast ${c.b}, Lunch ${c.l}, Dinner ${c.d}`,
         mess: db.settings.messName,
       });
     const r = await sms(db, 'cook', db.settings.cookPhone, message, 'menu');
@@ -709,14 +712,14 @@ export function createEngine(store, adapter) {
         meal: Math.ceil(Math.max(0, -r.mealBalance)),
         service: Math.ceil(Math.max(0, -r.serviceBalance)),
       });
-      notify(db, id, `ডিউ অ্যালার্ট: ${month} মাসে আপনার বকেয়া ${Math.ceil(r.due)} টাকা`, 'due');
+      notify(db, id, `Due alert: your due for ${month} is Tk ${Math.ceil(r.due)}`, 'due');
       results.push({ memberId: id, name: r.name, ...(await sms(db, id, r.phone, message, 'due')) });
     }
     return results;
   });
   def('sendCustomSms', 'manager', async (db, p) => {
     const msg = String(p.message || '').trim();
-    req(msg, 'মেসেজ লিখুন');
+    req(msg, 'Write a message');
     const results = [];
     for (const id of p.memberIds || []) {
       const m = db.members.find((x) => x.id === id);
@@ -730,7 +733,7 @@ export function createEngine(store, adapter) {
 
   def('broadcast', 'manager', (db, p) => {
     const msg = String(p.message || '').trim();
-    req(msg, 'মেসেজ লিখুন');
+    req(msg, 'Write a message');
     notify(db, 'all', msg, 'notice');
     return { ok: true };
   });
@@ -751,7 +754,7 @@ export function createEngine(store, adapter) {
     return copy;
   });
   def('importData', 'manager', (db, p) => {
-    req(p.data && Array.isArray(p.data.members) && p.data.members.length, 'ভুল ব্যাকআপ ফাইল');
+    req(p.data && Array.isArray(p.data.members) && p.data.members.length, 'Invalid backup file');
     const base = emptyDb();
     for (const k of Object.keys(base)) db[k] = p.data[k] ?? base[k];
     db.settings = { ...base.settings, ...(p.data.settings || {}) };
@@ -772,8 +775,8 @@ export function createEngine(store, adapter) {
       if (a.role !== 'public') {
         const t = token ? await adapter.verifyToken(token) : null;
         me = t ? db.members.find((m) => m.id === t.uid) : null;
-        if (!me || !me.active) throw new AppError('unauthorized', 'আবার লগইন করুন');
-        if (a.role === 'manager' && me.role !== 'manager') throw new AppError('forbidden', 'শুধু ম্যানেজার এটি করতে পারবেন');
+        if (!me || !me.active) throw new AppError('unauthorized', 'Please log in again');
+        if (a.role === 'manager' && me.role !== 'manager') throw new AppError('forbidden', 'Only the manager can do this');
       }
       const result = await a.fn(db, payload || {}, me);
       if (!READ_ONLY.has(action)) await store.save(db);

@@ -51,6 +51,9 @@ export function MemberForm({ member, onClose, onSaved }) {
     address: '',
     nid: '',
     emergencyContact: '',
+    bloodGroup: '',
+    dob: '',
+    district: '',
     joinDate: todayStr(),
     leaveDate: '',
     active: true,
@@ -125,6 +128,21 @@ export function MemberForm({ member, onClose, onSaved }) {
           <Field label={t('address')}>
             <input className="input" value={f.address} onChange={set('address')} />
           </Field>
+          <Field label={t('district')}>
+            <input className="input" value={f.district} onChange={set('district')} />
+          </Field>
+          <Field label={t('bloodGroup')}>
+            <select className="input" value={f.bloodGroup} onChange={set('bloodGroup')}>
+              {['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((g) => (
+                <option key={g} value={g}>
+                  {g || '—'}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t('dob')}>
+            <input className="input" type="date" value={f.dob} onChange={set('dob')} />
+          </Field>
           <Field label={t('joinDate')}>
             <input className="input" type="date" value={f.joinDate} onChange={set('joinDate')} />
           </Field>
@@ -185,6 +203,11 @@ export default function Members() {
         {m.room && <span className="badge">🚪 {t('room')} {n2(m.room)}</span>}
         {!m.active && <span className="badge red">{t('inactive')}</span>}
       </div>
+      {(m.profession || m.district) && (
+        <div className="small muted mt">
+          {[m.profession, m.district].filter(Boolean).join(' · ')}
+        </div>
+      )}
       {isManager && (
         <>
           {m.phone && <div className="small muted mt">📱 {m.phone}</div>}

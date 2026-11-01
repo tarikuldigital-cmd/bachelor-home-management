@@ -81,7 +81,7 @@ export default function Bills() {
                     </td>
                     <td className="muted">
                       {b.note}
-                      {b.memberIds?.length ? <span className="badge" style={{ marginLeft: 6 }}>{n2(b.memberIds.length)} জন</span> : null}
+                      {b.memberIds?.length ? <span className="badge" style={{ marginLeft: 6 }}>👤 {n2(b.memberIds.length)}</span> : null}
                     </td>
                     <td className="num">{money(b.amount, cur)}</td>
                     <td className="num">

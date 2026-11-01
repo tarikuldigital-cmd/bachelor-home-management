@@ -137,7 +137,7 @@ export default function Deposits() {
               </div>
             </Field>
             <Field label={t('note')}>
-              <input className="input" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="বিকাশ / নগদ / ক্যাশ" />
+              <input className="input" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="bKash / Nagad / Cash" />
             </Field>
           </div>
         </Modal>

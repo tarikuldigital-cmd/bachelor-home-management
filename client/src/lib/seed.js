@@ -1,38 +1,48 @@
 import { emptyDb, todayStr, monthOf, pad } from './engine.js';
 
 // Demo data so the site looks alive on first open.
+const PHOTOS = ['mehedi', 'tariqul', 'kawsar', 'robiul', 'ashik', 'anik', 'shakil'];
 export async function seedDemo(hash) {
   const db = emptyDb();
   db.settings.messName = 'Bachelor Home';
-  db.settings.address = 'ধানমন্ডি, ঢাকা';
-  db.settings.cookName = 'রহিম বাবুর্চি';
-  db.settings.cookPhone = '01700000000';
+  db.settings.address = 'Dhaka, Bangladesh';
+  db.settings.cookName = 'Cook';
+  db.settings.cookPhone = '';
+  db.settings.dueSmsTemplate = 'Dear {name}, your due at {mess} for {month} is Tk {due}. Please pay soon. Thank you.';
+  db.settings.menuSmsTemplate = "{cook}, tomorrow's menu ({date}):\n{menu}\nMeals: {meals}\n- {mess}";
+  db.settings.dutySmsTemplate = 'Dear {name}, you have bazar duty on {date}. - {mess}';
+  // Public demo: only non-sensitive info (no phone, NID, address, DOB, blood group)
   const people = [
-    ['manager', 'তারিকুল ইসলাম', 'manager', '01711000001', '101', 'ম্যানেজার'],
-    ['rahim', 'রহিম উদ্দিন', 'member', '01711000002', '101', 'চাকরিজীবী'],
-    ['karim', 'করিম হাসান', 'member', '01711000003', '102', 'ছাত্র'],
-    ['sakib', 'সাকিব আহমেদ', 'member', '01711000004', '102', 'ছাত্র'],
-    ['nayeem', 'নাঈম হোসেন', 'member', '01711000005', '103', 'ব্যবসায়ী'],
-    ['fahim', 'ফাহিম রহমান', 'member', '01711000006', '103', 'চাকরিজীবী'],
+    ['mehedi', 'Mehedi Hasan', 'manager', '1', 'Software Engineer', 'Pirojpur'],
+    ['shuvo', 'Sajjad Hossen Shuvo', 'member', '2', 'Graduate Student', 'Tangail'],
+    ['tariqul', 'Md. Tarikul', 'member', '2', 'Accountant', 'Barguna'],
+    ['kawsar', 'Kawsar', 'member', '3', '', 'Gazipur'],
+    ['robiul', 'Md Robiul Hassan', 'member', '4', 'Freelancer', 'Chandpur'],
+    ['ashik', 'Md. Ashikur Rahman', 'member', '4', 'Graduate Student', 'Narail'],
+    ['anik', 'Anik', 'member', '', '', ''],
+    ['shakil', 'Shakil', 'member', '', '', ''],
   ];
   const pw = await hash('1234');
   const today = todayStr();
   const month = monthOf(today);
   const day = Number(today.slice(8, 10));
-  people.forEach(([username, name, role, phone, room, profession], i) => {
+  people.forEach(([username, name, role, room, profession, district], i) => {
     db.members.push({
       id: 'm' + (i + 1),
       username,
       name,
       role,
-      phone,
+      phone: '',
       room,
       profession,
+      district,
       email: '',
       address: '',
       nid: '',
+      bloodGroup: '',
+      dob: '',
       emergencyContact: '',
-      photo: '',
+      photo: PHOTOS.includes(username) ? `./members/${username}.jpg` : '',
       joinDate: `${month}-01`,
       leaveDate: '',
       active: true,
@@ -66,7 +76,7 @@ export async function seedDemo(hash) {
           id: `bz${k}-${d}`,
           date,
           memberId: m.id,
-          items: ['চাল, ডাল, তেল', 'মাছ, সবজি', 'মুরগি, পেঁয়াজ, আলু', 'ডিম, সবজি, মসলা'][d % 4],
+          items: ['Rice, lentils, oil', 'Fish, vegetables', 'Chicken, onion, potato', 'Eggs, vegetables, spices'][d % 4],
           amount: 900 + Math.round(rnd() * 900),
         });
       }
@@ -85,13 +95,13 @@ export async function seedDemo(hash) {
   });
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  db.menus.push({ id: 'mn1', date: today, breakfast: 'খিচুড়ি, ডিম ভাজি', lunch: 'ভাত, রুই মাছ, ডাল', dinner: 'ভাত, মুরগির মাংস, সবজি', note: '' });
-  db.menus.push({ id: 'mn2', date: todayStr(tomorrow), breakfast: 'পরোটা, ডাল', lunch: 'ভাত, ইলিশ মাছ, শাক', dinner: 'ভাত, ডিম কারি, ডাল', note: 'ঝাল কম' });
+  db.menus.push({ id: 'mn1', date: today, breakfast: 'Khichuri, fried egg', lunch: 'Rice, rui fish, dal', dinner: 'Rice, chicken curry, vegetables', note: '' });
+  db.menus.push({ id: 'mn2', date: todayStr(tomorrow), breakfast: 'Paratha, dal', lunch: 'Rice, hilsa fish, greens', dinner: 'Rice, egg curry, dal', note: 'Less spicy' });
   for (let i = 0; i < 6; i++) {
     const dt = new Date();
     dt.setDate(dt.getDate() + i * 2);
     db.duties.push({ id: 'du' + i, date: todayStr(dt), memberId: db.members[(i + 1) % db.members.length].id, note: '' });
   }
-  db.notifications.push({ id: 'n1', to: 'all', text: 'Bachelor Home Management-এ স্বাগতম! 🎉', kind: 'notice', date: new Date().toISOString(), readBy: [] });
+  db.notifications.push({ id: 'n1', to: 'all', text: 'Welcome to Bachelor Home Management! 🎉', kind: 'notice', date: new Date().toISOString(), readBy: [] });
   return db;
 }

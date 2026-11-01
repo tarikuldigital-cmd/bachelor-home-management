@@ -173,7 +173,7 @@ export default function Bazar() {
               <div className="list-item" key={d.id}>
                 <span className={`badge ${d.date === todayStr() ? 'amber' : 'green'}`}>{dateLabel(d.date)}</span>
                 <span className={`grow ${d.memberId === user.id ? 'bold' : ''}`}>
-                  {d.name} {d.memberId === user.id && '(আপনি)'}
+                  {d.name} {d.memberId === user.id && '(you)'}
                 </span>
                 {isManager && (
                   <>
@@ -235,7 +235,7 @@ export default function Bazar() {
               </Field>
             )}
             <Field label={t('items')}>
-              <textarea className="input" value={form.items} onChange={(e) => setForm({ ...form, items: e.target.value })} placeholder="চাল ৫কেজি, ডাল, মাছ..." />
+              <textarea className="input" value={form.items} onChange={(e) => setForm({ ...form, items: e.target.value })} placeholder="Rice 5kg, lentils, fish..." />
             </Field>
           </div>
         </Modal>
