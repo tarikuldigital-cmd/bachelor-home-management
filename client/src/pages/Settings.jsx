@@ -133,10 +133,13 @@ function MessSettings() {
             </button>
           </div>
           <div className="alert green small">🔒 {t('managerOnlyCharges')}</div>
+          <label className="check">
+            <input type="checkbox" checked={f.autoDueSms !== false} onChange={set('autoDueSms')} /> 📨 {t('autoDueSms')}
+          </label>
         </div>
         <h3 className="mt2">✉️ {t('templates')}</h3>
         <div className="grid mt">
-          <Field label={`${t('dueReminder')} — {name} {mess} {month} {due} {meal} {service}`}>
+          <Field label={`${t('dueReminder')} — {name} {mess} {month} {meals} {rate} {cost} {deposit} {due} {service}`}>
             <textarea className="input" value={f.dueSmsTemplate} onChange={set('dueSmsTemplate')} />
           </Field>
           <Field label={`${t('menu')} — {cook} {date} {menu} {meals} {mess}`}>

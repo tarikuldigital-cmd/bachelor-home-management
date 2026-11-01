@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api, DEMO } from '../lib/api.js';
 import { t, n2 } from '../lib/i18n.js';
-import { money, smsLink, timeAgo } from '../lib/util.js';
+import { money, smsLink, timeAgo, whatsappLink } from '../lib/util.js';
 import { monthOf, todayStr } from '../lib/engine.js';
 import { MonthPicker, Spinner, useApi, useToast, Empty, Avatar } from '../components/ui.jsx';
 import { useAuth } from '../App.jsx';
@@ -31,6 +31,19 @@ export default function Sms() {
       const ok = r.filter((x) => x.ok).length;
       toast(`✓ ${n2(ok)}/${n2(r.length)} ${t('sent')}${DEMO ? ' (demo)' : ''}`);
       setSel([]);
+      log.reload();
+    } catch (e) {
+      toast(e.message, true);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const sendAll = async () => {
+    if (!confirm(`${t('sendDueAll')} — ${month}?`)) return;
+    setBusy(true);
+    try {
+      const r = await api('sendDueToAll', { month });
+      toast(`✓ ${n2(r.filter((x) => x.ok).length)}/${n2(r.length)} ${t('sent')}${DEMO ? ' (demo)' : ''}`);
       log.reload();
     } catch (e) {
       toast(e.message, true);
@@ -86,6 +99,9 @@ export default function Sms() {
               <button className="btn sm" onClick={() => setSel(sel.length === (dues.data || []).length ? [] : (dues.data || []).map((d) => d.memberId))}>
                 {t('selectAll')}
               </button>
+              <button className="btn" disabled={busy || !(dues.data || []).length} onClick={sendAll}>
+                📨 {t('sendDueAll')}
+              </button>
               <button className="btn primary" disabled={!sel.length || busy} onClick={sendDue}>
                 ✉️ {t('sendSelected')} ({n2(sel.length)})
               </button>
@@ -111,10 +127,15 @@ export default function Sms() {
                   <div className="small mt" style={{ background: 'var(--bg2)', padding: '8px 10px', borderRadius: 10 }}>
                     {d.message}
                   </div>
-                  {DEMO && d.phone && (
-                    <a className="btn sm mt" href={smsLink(d.phone, d.message)}>
-                      📱 {t('openSmsApp')}
-                    </a>
+                  {d.phone && (
+                    <div className="row mt" style={{ gap: 6 }}>
+                      <a className="btn sm whatsapp" href={whatsappLink(d.phone, d.message)} target="_blank" rel="noreferrer">
+                        🟢 WhatsApp
+                      </a>
+                      <a className="btn sm" href={smsLink(d.phone, d.message)}>
+                        📱 {t('openSmsApp')}
+                      </a>
+                    </div>
                   )}
                 </div>
               </div>

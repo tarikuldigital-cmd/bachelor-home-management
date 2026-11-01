@@ -7,6 +7,7 @@ import { monthOf, todayStr } from '../lib/engine.js';
 import { Stat, MonthPicker, Bars, Spinner, useApi, Avatar, Empty } from '../components/ui.jsx';
 import { AccountStats, DueAlert, MembersTable } from '../components/Account.jsx';
 import { useAuth } from '../App.jsx';
+import { TrendCard } from '../components/Trend.jsx';
 import { MenuCard } from './Home.jsx';
 
 export default function Dashboard() {
@@ -37,6 +38,8 @@ export default function Dashboard() {
       </div>
 
       <DueAlert stats={d.stats} cur={cur} month={month} />
+
+      <TrendCard month={month} cur={cur} />
 
       <AccountStats d={d} cur={cur} />
 

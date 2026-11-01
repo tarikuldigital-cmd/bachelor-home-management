@@ -8,7 +8,8 @@ export async function seedDemo(hash) {
   db.settings.address = 'Dhaka, Bangladesh';
   db.settings.cookName = 'Cook';
   db.settings.cookPhone = '';
-  db.settings.dueSmsTemplate = 'Dear {name}, your due at {mess} for {month} is Tk {due}. Please pay soon. Thank you.';
+  db.settings.dueSmsTemplate = 'Dear {name}, {mess} {month}: Meals {meals} x Tk {rate} = Tk {cost}. Deposit Tk {deposit}. Your due: Tk {due}. Please pay soon. Thank you.';
+  db.settings.lastAutoDueMonth = 'skip-demo';
   db.settings.menuSmsTemplate = '{cook}, menu for {date}:\n{menu}\nMeals: {meals}\n- {mess}';
   db.settings.dutySmsTemplate = 'Dear {name}, you have bazar duty on {date}. - {mess}';
   // Public demo: only non-sensitive info (no phone, NID, address, DOB, blood group)

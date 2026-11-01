@@ -73,6 +73,19 @@ async function firstRun() {
 
 const engine = createEngine(store, adapter);
 
+// Month-end due SMS: on the 1st (or the first check after it), every member with a due
+// for last month gets an SMS. Runs at most once per month. Turn off in Settings.
+async function runMonthly() {
+  try {
+    const r = await engine.monthlyTasks();
+    if (r) console.log(`📨 Month-end due SMS for ${r.month}: ${r.sent} sent`);
+  } catch (e) {
+    console.error('monthly task failed:', e.message);
+  }
+}
+setTimeout(runMonthly, 10_000);
+setInterval(runMonthly, 60 * 60 * 1000);
+
 // ---------- http ----------
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon' };
 

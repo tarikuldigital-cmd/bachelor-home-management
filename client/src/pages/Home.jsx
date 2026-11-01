@@ -7,6 +7,7 @@ import { monthOf, todayStr } from '../lib/engine.js';
 import { Brand, Stat, MonthPicker, Bars, Empty, Spinner, useApi, Avatar } from '../components/ui.jsx';
 import { useAuth, usePrefs } from '../App.jsx';
 import { getLang } from '../lib/i18n.js';
+import { TrendCard } from '../components/Trend.jsx';
 
 export function RulesAlert({ rules }) {
   if (!rules || !rules.length) return null;
@@ -191,6 +192,10 @@ export default function Home() {
               <Stat label={t('totalBazar')} value={money(data.totalBazar, data.currency)} ico="🛒" />
               <Stat label={t('mealRate')} value={money(data.mealRate, data.currency)} ico="📈" hl />
               <Stat label={t('memberCount')} value={n2(data.memberCount)} ico="👥" />
+            </div>
+
+            <div className="mt">
+              <TrendCard month={month} cur={data.currency} />
             </div>
 
             <div className="grid g2 mt">

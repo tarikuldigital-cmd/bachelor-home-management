@@ -31,7 +31,8 @@ export function emptyDb() {
       currency: '৳',
       weights: { b: 0.5, l: 1, d: 1 },
       breakfastEnabled: false, // two meals a day: lunch + dinner
-      mealRateRound: 'round', // 'none' | 'round' | 'ceil' — e.g. 55.91 -> 56 like the notebook
+      mealRateRound: 'round',
+      autoDueSms: true, // on the 1st of every month, SMS each member their due for last month // 'none' | 'round' | 'ceil' — e.g. 55.91 -> 56 like the notebook
       rules: DEFAULT_RULES,
       // Only the manager updates meals, bazar, deposits & bills (personal charges)
       membersCanEditMeals: false,
@@ -40,7 +41,7 @@ export function emptyDb() {
       cookName: '',
       cookPhone: '',
       dueSmsTemplate:
-        'Dear {name}, your due at {mess} for {month} is Tk {due}. Please pay soon. Thank you.',
+        'Dear {name}, {mess} {month}: Meals {meals} x Tk {rate} = Tk {cost}. Deposit Tk {deposit}. Your due: Tk {due}. Please pay soon. Thank you.',
       menuSmsTemplate: '{cook}, menu for {date}:\n{menu}\nMeals: {meals}\n- {mess}',
       dutySmsTemplate: 'Dear {name}, you have bazar duty on {date}. - {mess}',
     },
@@ -312,8 +313,17 @@ export function createEngine(store, adapter) {
     return list[0] || cur;
   }
 
+  function lastMonths(n) {
+    const [y, m] = monthOf(todayStr()).split('-').map(Number);
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const d = new Date(y, m - 1 - i, 1);
+      out.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
+    }
+    return out;
+  }
   function allMonths(db) {
-    const set = new Set([monthOf(todayStr())]);
+    const set = new Set(lastMonths(12));
     db.meals.forEach((x) => set.add(monthOf(x.date)));
     db.bazar.forEach((x) => set.add(monthOf(x.date)));
     db.bills.forEach((x) => set.add(x.month));
@@ -785,6 +795,51 @@ export function createEngine(store, adapter) {
     return r;
   });
 
+  function monthName(month) {
+    const [y, m] = month.split('-').map(Number);
+    return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1] + ' ' + y;
+  }
+  function dueVars(db, r, c, month) {
+    return {
+      name: r.name,
+      mess: db.settings.messName,
+      month: monthName(month),
+      due: Math.ceil(r.due),
+      meals: r.mealCount,
+      rate: c.mealRate,
+      cost: Math.round(r.mealCost),
+      deposit: Math.round(r.totalDeposit),
+      service: Math.ceil(r.serviceCharge),
+      meal: Math.ceil(Math.max(0, -r.mealBalance)),
+    };
+  }
+  // month-end: SMS every member who has a due for that month
+  async function sendDueToAll(db, month) {
+    const c = computeMonth(db, month);
+    const results = [];
+    for (const r of c.rows.filter((x) => x.due > 0)) {
+      const message = fill(db.settings.dueSmsTemplate, dueVars(db, r, c, month));
+      notify(db, r.memberId, `Due alert: your due for ${monthName(month)} is Tk ${Math.ceil(r.due)}`, 'due');
+      results.push({ memberId: r.memberId, name: r.name, ...(await sms(db, r.memberId, r.phone, message, 'due')) });
+    }
+    return results;
+  }
+  def('sendDueToAll', 'manager', async (db, p) => {
+    req(/^\d{4}-\d{2}$/.test(p.month || ''), 'Select a month');
+    return sendDueToAll(db, p.month);
+  });
+
+  // month-by-month trend (public totals only)
+  def('trends', 'public', (db, p) => {
+    const n = Math.min(24, Math.max(2, Number(p.months) || 12));
+    return lastMonths(n)
+      .reverse()
+      .map((m) => {
+        const c = computeMonth(db, m);
+        return { month: m, totalMeals: c.totalMeals, totalBazar: c.totalBazar, mealRate: c.mealRate, totalDeposit: c.totalDeposit, totalBills: c.totalBills, memberCount: c.memberCount };
+      });
+  });
+
   def('dueList', 'manager', (db, p) => {
     const month = p.month || defaultMonth(db);
     const c = computeMonth(db, month);
@@ -792,7 +847,7 @@ export function createEngine(store, adapter) {
       .filter((r) => r.due > 0)
       .map((r) => ({
         ...r,
-        message: fill(db.settings.dueSmsTemplate, { name: r.name, mess: db.settings.messName, month, due: Math.ceil(r.due), meal: Math.ceil(Math.max(0, -r.mealBalance)), service: Math.ceil(Math.max(0, -r.serviceBalance)) }),
+        message: fill(db.settings.dueSmsTemplate, dueVars(db, r, c, month)),
       }));
   });
   def('sendDueSms', 'manager', async (db, p) => {
@@ -802,14 +857,7 @@ export function createEngine(store, adapter) {
     for (const id of p.memberIds || []) {
       const r = c.rows.find((x) => x.memberId === id);
       if (!r || r.due <= 0) continue;
-      const message = fill(p.template || db.settings.dueSmsTemplate, {
-        name: r.name,
-        mess: db.settings.messName,
-        month,
-        due: Math.ceil(r.due),
-        meal: Math.ceil(Math.max(0, -r.mealBalance)),
-        service: Math.ceil(Math.max(0, -r.serviceBalance)),
-      });
+      const message = fill(p.template || db.settings.dueSmsTemplate, dueVars(db, r, c, month));
       notify(db, id, `Due alert: your due for ${month} is Tk ${Math.ceil(r.due)}`, 'due');
       results.push({ memberId: id, name: r.name, ...(await sms(db, id, r.phone, message, 'due')) });
     }
@@ -839,7 +887,7 @@ export function createEngine(store, adapter) {
   def('getSettings', 'manager', (db) => ({ ...db.settings, rules: Array.isArray(db.settings.rules) ? db.settings.rules : DEFAULT_RULES }));
   def('saveSettings', 'manager', (db, p) => {
     const s = db.settings;
-    const keys = ['mealRateRound', 'breakfastEnabled', 'messName', 'address', 'currency', 'cookName', 'cookPhone', 'dueSmsTemplate', 'menuSmsTemplate', 'dutySmsTemplate', 'mealLockHour'];
+    const keys = ['autoDueSms', 'mealRateRound', 'breakfastEnabled', 'messName', 'address', 'currency', 'cookName', 'cookPhone', 'dueSmsTemplate', 'menuSmsTemplate', 'dutySmsTemplate', 'mealLockHour'];
     keys.forEach((k) => {
       if (p[k] !== undefined) s[k] = p[k];
     });
@@ -901,7 +949,7 @@ export function createEngine(store, adapter) {
   }
 
   const READ_ONLY = new Set([
-    'publicSummary', 'managerHistory', 'me', 'directory', 'memberDetail', 'notifications', 'mealsForDate', 'listBazar', 'listDuties', 'listMenus',
+    'publicSummary', 'trends', 'managerHistory', 'me', 'directory', 'memberDetail', 'notifications', 'mealsForDate', 'listBazar', 'listDuties', 'listMenus',
     'overview', 'listMembers', 'listDeposits', 'listBills', 'menuSmsPreview', 'dueList', 'smsLog', 'getSettings', 'exportData',
   ]);
 
@@ -924,5 +972,19 @@ export function createEngine(store, adapter) {
     });
   }
 
-  return { call, actions: Object.keys(A) };
+  // Internal tasks run by the server on a timer (no user session)
+  async function monthlyTasks() {
+    return serial(async () => {
+      const db = await store.load();
+      const s = db.settings;
+      const prev = lastMonths(2)[1];
+      if (s.autoDueSms === false || s.lastAutoDueMonth === prev) return null;
+      const res = await sendDueToAll(db, prev);
+      s.lastAutoDueMonth = prev;
+      await store.save(db);
+      return { month: prev, sent: res.length };
+    });
+  }
+
+  return { call, monthlyTasks, actions: Object.keys(A) };
 }
