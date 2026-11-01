@@ -9,7 +9,7 @@ export async function seedDemo(hash) {
   db.settings.address = 'Dhaka, Bangladesh';
   db.settings.cookName = 'Cook';
   db.settings.cookPhone = '';
-  db.settings.dueSmsTemplate = 'Dear {name}, {mess} {month}: Meals {meals} x Tk {rate} = Tk {cost}. Deposit Tk {deposit}. Your due: Tk {due}. Please pay soon. Thank you.';
+  db.settings.dueSmsTemplate = 'Dear {name}, {mess} {month}. MEAL: {meals} x Tk {rate} = Tk {cost}, deposit Tk {deposit}, meal due Tk {mealDue}. SERVICE CHARGE: Tk {service}, paid Tk {servicePaid}, due Tk {serviceDue}. Please pay soon. Thank you.';
   db.settings.lastAutoDueMonth = 'skip-demo';
   db.settings.menuSmsTemplate = '{cook}, menu for {date}:\n{menu}\nMeals: {meals}\n- {mess}';
   db.settings.dutySmsTemplate = 'Dear {name}, you have bazar duty on {date}. - {mess}';

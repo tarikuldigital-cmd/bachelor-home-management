@@ -139,7 +139,7 @@ function MessSettings() {
         </div>
         <h3 className="mt2">✉️ {t('templates')}</h3>
         <div className="grid mt">
-          <Field label={`${t('dueReminder')} — {name} {mess} {month} {meals} {rate} {cost} {deposit} {due} {service}`}>
+          <Field label={`${t('dueReminder')} — {name} {mess} {month} {meals} {rate} {cost} {deposit} {mealDue} {service} {servicePaid} {serviceDue}`}>
             <textarea className="input" value={f.dueSmsTemplate} onChange={set('dueSmsTemplate')} />
           </Field>
           <Field label={`${t('menu')} — {cook} {date} {menu} {meals} {mess}`}>

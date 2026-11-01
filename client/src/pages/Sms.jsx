@@ -117,12 +117,13 @@ export default function Sms() {
                 <div className="grow">
                   <div className="row between">
                     <b>{d.name}</b>
-                    <span className="badge red">
-                      {t('due')}: {money(d.due, cur)}
+                    <span className="row" style={{ gap: 4 }}>
+                      {d.mealDue > 0 && <span className="badge red">🍛 {money(d.mealDue, cur)}</span>}
+                      {d.serviceDue > 0 && <span className="badge blue">🧾 {money(d.serviceDue, cur)}</span>}
                     </span>
                   </div>
                   <div className="tiny muted">
-                    📱 {d.phone || '—'} · {t('meals')}: {money(Math.max(0, -d.mealBalance), cur)} · {t('serviceCharge')}: {money(Math.max(0, -d.serviceBalance), cur)}
+                    📱 {d.phone || '—'} · {t('mealDue')}: {money(d.mealDue, cur)} · {t('serviceDue')}: {money(d.serviceDue, cur)}
                   </div>
                   <div className="small mt" style={{ background: 'var(--bg2)', padding: '8px 10px', borderRadius: 10 }}>
                     {d.message}

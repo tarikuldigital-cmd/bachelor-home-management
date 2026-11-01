@@ -41,7 +41,7 @@ export function emptyDb() {
       cookName: '',
       cookPhone: '',
       dueSmsTemplate:
-        'Dear {name}, {mess} {month}: Meals {meals} x Tk {rate} = Tk {cost}. Deposit Tk {deposit}. Your due: Tk {due}. Please pay soon. Thank you.',
+        'Dear {name}, {mess} {month}. MEAL: {meals} x Tk {rate} = Tk {cost}, deposit Tk {deposit}, meal due Tk {mealDue}. SERVICE CHARGE: Tk {service}, paid Tk {servicePaid}, due Tk {serviceDue}. Please pay soon. Thank you.',
       menuSmsTemplate: '{cook}, menu for {date}:\n{menu}\nMeals: {meals}\n- {mess}',
       dutySmsTemplate: 'Dear {name}, you have bazar duty on {date}. - {mess}',
     },
@@ -150,7 +150,7 @@ function computeArchive(db, month, a) {
   }
   return {
     month, archived: true, totalMeals, totalBazar, mealRate: round2(mealRate), mealRateExact: round2(rawRate),
-    totalBills: 0, billsByType: {}, totalDeposit: a.totalDeposit || 0, memberCount: a.memberCount || 0, rows: [], daily, bills: [],
+    totalBills: 0, billsByType: {}, totalDeposit: a.totalDeposit || 0, totalServicePaid: 0, memberCount: a.memberCount || 0, rows: [], daily, bills: [],
   };
 }
 
@@ -170,7 +170,9 @@ export function computeMonth(db, month) {
   const rr = db.settings.mealRateRound;
   const mealRate = rr === 'round' ? Math.round(rawRate) : rr === 'ceil' ? Math.ceil(rawRate) : rawRate;
   const totalBills = round2(bills.reduce((s, x) => s + Number(x.amount || 0), 0));
-  const totalDeposit = round2(deposits.reduce((s, x) => s + Number(x.amount || 0), 0));
+  // Two fully separate accounts: meal money and service charge money never mix
+  const totalDeposit = round2(deposits.filter((x) => x.type !== 'service').reduce((s, x) => s + Number(x.amount || 0), 0));
+  const totalServicePaid = round2(deposits.filter((x) => x.type === 'service').reduce((s, x) => s + Number(x.amount || 0), 0));
 
   // per-member service share
   const shareOf = (memberId) => {
@@ -193,8 +195,11 @@ export function computeMonth(db, month) {
     const bazarSpent = round2(bazar.filter((x) => x.memberId === m.id).reduce((s, x) => s + Number(x.amount), 0));
     const mealBalance = round2(mealDeposit - mealCost); // + => will get back, - => due
     const serviceBalance = round2(serviceDeposit - serviceCharge);
-    const net = round2(mealBalance + serviceBalance);
-    const due = round2(Math.max(0, -mealBalance) + Math.max(0, -serviceBalance));
+    const mealDue = round2(Math.max(0, -mealBalance));
+    const mealReturn = round2(Math.max(0, mealBalance));
+    const serviceDue = round2(Math.max(0, -serviceBalance));
+    const serviceAdvance = round2(Math.max(0, serviceBalance));
+    const due = round2(mealDue + serviceDue); // only used to find members who owe something
     return {
       memberId: m.id,
       name: m.name,
@@ -205,13 +210,14 @@ export function computeMonth(db, month) {
       mealDeposit,
       serviceDeposit,
       serviceCharge,
-      totalDeposit: round2(mealDeposit + serviceDeposit),
       bazarSpent,
       mealBalance,
+      mealDue,
+      mealReturn,
       serviceBalance,
-      net,
+      serviceDue,
+      serviceAdvance,
       due,
-      receivable: round2(Math.max(0, net)),
     };
   });
 
@@ -239,6 +245,7 @@ export function computeMonth(db, month) {
     totalBills,
     billsByType,
     totalDeposit,
+    totalServicePaid,
     memberCount: members.length,
     rows,
     daily,
@@ -844,9 +851,12 @@ export function createEngine(store, adapter) {
       meals: r.mealCount,
       rate: c.mealRate,
       cost: Math.round(r.mealCost),
-      deposit: Math.round(r.totalDeposit),
+      deposit: Math.round(r.mealDeposit),
+      mealDue: Math.ceil(r.mealDue),
       service: Math.ceil(r.serviceCharge),
-      meal: Math.ceil(Math.max(0, -r.mealBalance)),
+      servicePaid: Math.round(r.serviceDeposit),
+      serviceDue: Math.ceil(r.serviceDue),
+      meal: Math.ceil(r.mealDue),
     };
   }
   // month-end: SMS every member who has a due for that month
@@ -855,7 +865,7 @@ export function createEngine(store, adapter) {
     const results = [];
     for (const r of c.rows.filter((x) => x.due > 0)) {
       const message = fill(db.settings.dueSmsTemplate, dueVars(db, r, c, month));
-      notify(db, r.memberId, `Due alert: your due for ${monthName(month)} is Tk ${Math.ceil(r.due)}`, 'due');
+      notify(db, r.memberId, `Due alert ${monthName(month)}: meal due Tk ${Math.ceil(r.mealDue)}, service charge due Tk ${Math.ceil(r.serviceDue)}`, 'due');
       results.push({ memberId: r.memberId, name: r.name, ...(await sms(db, r.memberId, r.phone, message, 'due')) });
     }
     return results;
@@ -894,7 +904,7 @@ export function createEngine(store, adapter) {
       const r = c.rows.find((x) => x.memberId === id);
       if (!r || r.due <= 0) continue;
       const message = fill(p.template || db.settings.dueSmsTemplate, dueVars(db, r, c, month));
-      notify(db, id, `Due alert: your due for ${month} is Tk ${Math.ceil(r.due)}`, 'due');
+      notify(db, id, `Due alert ${monthName(month)}: meal due Tk ${Math.ceil(r.mealDue)}, service charge due Tk ${Math.ceil(r.serviceDue)}`, 'due');
       results.push({ memberId: id, name: r.name, ...(await sms(db, id, r.phone, message, 'due')) });
     }
     return results;

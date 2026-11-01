@@ -45,11 +45,11 @@ export default function Deposits() {
           ＋ {t('add')}
         </button>
       </div>
-      <div className="grid g3">
+      <div className="grid g2">
         <Stat label={t('mealDeposit')} value={money(sum('meal'), cur)} ico="🍛" />
         <Stat label={t('serviceDeposit')} value={money(sum('service'), cur)} ico="🧾" />
-        <Stat label={t('totalDeposit')} value={money(sum('meal') + sum('service'), cur)} ico="💰" hl />
       </div>
+      <div className="alert green small">🔒 {t('separateNote')}</div>
       <div className="card">
         {list.loading && !list.data ? (
           <Spinner />

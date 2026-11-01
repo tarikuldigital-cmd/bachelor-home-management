@@ -1,31 +1,27 @@
 import { Link } from 'react-router-dom';
 import { t, n2 } from '../lib/i18n.js';
 import { money, num, dateLabel, monthLabel } from '../lib/util.js';
-import { Stat, Balance, Empty, Avatar } from './ui.jsx';
+import { Empty, Avatar } from './ui.jsx';
 
 // Personal account block — only shown after login (member sees own, manager sees anyone)
+// Meal account and service-charge account are completely separate.
 export function DueAlert({ stats, cur, month }) {
   if (!stats) return null;
-  if (stats.due > 0)
+  if (stats.mealDue > 0 || stats.serviceDue > 0)
     return (
       <div className="alert red">
         <span style={{ fontSize: 26 }}>⚠️</span>
         <div className="grow">
-          <div className="bold">{t('dueAlert')}</div>
-          <div className="small">
-            {t('dueAlertText')} ({monthLabel(month)}): <b className="neg">{money(stats.due, cur)}</b>
-            {stats.mealBalance < 0 && (
-              <>
-                {' '}
-                · {t('meals')}: {money(-stats.mealBalance, cur)}
-              </>
-            )}
-            {stats.serviceBalance < 0 && (
-              <>
-                {' '}
-                · {t('serviceCharge')}: {money(-stats.serviceBalance, cur)}
-              </>
-            )}
+          <div className="bold">
+            {t('dueAlert')} — {monthLabel(month)}
+          </div>
+          <div className="row small" style={{ gap: 14, marginTop: 4 }}>
+            <span>
+              🍛 {t('mealDue')}: <b className={stats.mealDue > 0 ? 'neg' : ''}>{money(stats.mealDue, cur)}</b>
+            </span>
+            <span>
+              🧾 {t('serviceDue')}: <b className={stats.serviceDue > 0 ? 'neg' : ''}>{money(stats.serviceDue, cur)}</b>
+            </span>
           </div>
         </div>
       </div>
@@ -38,72 +34,77 @@ export function DueAlert({ stats, cur, month }) {
   );
 }
 
+function AccResult({ value, cur, kind }) {
+  const v = Number(value) || 0;
+  if (Math.abs(v) < 0.005) return <span className="acc-result ok">✓ {t('settled')}</span>;
+  if (v > 0) return <span className="acc-result pos">{kind === 'service' ? t('advance') : t('willGet')}: {money(v, cur)}</span>;
+  return <span className="acc-result neg">{t('willPay')}: {money(-v, cur)}</span>;
+}
+
 export function AccountStats({ d, cur }) {
   const s = d.stats;
   if (!s) return <Empty />;
   return (
-    <>
-      <div className="grid g4">
-        <Stat label={t('myMeals')} value={num(s.mealCount)} sub={`${t('mealRate')}: ${money(d.summary.mealRate, cur)}`} ico="🍛" />
-        <Stat label={t('mealCost')} value={money(s.mealCost, cur)} sub={`${num(s.mealCount)} × ${money(d.summary.mealRate, cur)}`} ico="🧮" />
-        <Stat label={t('totalDeposit')} value={money(s.totalDeposit, cur)} sub={`${t('mealDep')} ${money(s.mealDeposit, cur)} · ${t('serviceDep')} ${money(s.serviceDeposit, cur)}`} ico="💰" />
-        <Stat
-          hl
-          danger={s.net < 0}
-          label={s.net >= 0 ? t('willGet') : t('willPay')}
-          value={money(Math.abs(s.net), cur)}
-          sub={t('netBalance')}
-          ico={s.net >= 0 ? '🎉' : '⏳'}
-        />
+    <div className="grid g2">
+      <div className="card acc meal-acc">
+        <div className="card-head">
+          <h3>🍛 {t('mealAccount')}</h3>
+          <span className="badge green">{t('mealRate')}: {money(d.summary.mealRate, cur)}</span>
+        </div>
+        <div className="acc-grid">
+          <div>
+            <div className="k">{t('myMeals')}</div>
+            <div className="v">{num(s.mealCount)}</div>
+          </div>
+          <div>
+            <div className="k">{t('mealCost')}</div>
+            <div className="v">{money(s.mealCost, cur)}</div>
+            <div className="tiny muted">
+              {num(s.mealCount)} × {money(d.summary.mealRate, cur)}
+            </div>
+          </div>
+          <div>
+            <div className="k">{t('mealDeposit')}</div>
+            <div className="v">{money(s.mealDeposit, cur)}</div>
+          </div>
+        </div>
+        <AccResult value={s.mealBalance} cur={cur} kind="meal" />
+        {s.bazarSpent > 0 && (
+          <div className="tiny muted mt">
+            {t('bazarSpent')}: {money(s.bazarSpent, cur)}
+          </div>
+        )}
       </div>
 
-      <div className="grid g2 mt">
-        <div className="card">
-          <div className="card-head">
-            <h3>🍛 {t('mealBalance')}</h3>
+      <div className="card acc service-acc">
+        <div className="card-head">
+          <h3>🧾 {t('serviceAccount')}</h3>
+          <span className="badge blue">🔒 {t('member')} + {t('manager')}</span>
+        </div>
+        <div className="acc-grid">
+          <div>
+            <div className="k">{t('yourShare')}</div>
+            <div className="v">{money(s.serviceCharge, cur)}</div>
           </div>
-          <div className="kv">
-            <span className="k">{t('myMeals')}</span>
-            <span>{num(s.mealCount)}</span>
-            <span className="k">{t('mealRate')}</span>
-            <span>{money(d.summary.mealRate, cur)}</span>
-            <span className="k">{t('mealCost')}</span>
-            <span>{money(s.mealCost, cur)}</span>
-            <span className="k">{t('mealDeposit')}</span>
-            <span>{money(s.mealDeposit, cur)}</span>
-            <span className="k">{t('bazarSpent')}</span>
-            <span>{money(s.bazarSpent, cur)}</span>
-            <span className="k bold">{t('mealBalance')}</span>
-            <span className="bold">
-              <Balance value={s.mealBalance} cur={cur} />
-            </span>
+          <div>
+            <div className="k">{t('serviceDeposit')}</div>
+            <div className="v">{money(s.serviceDeposit, cur)}</div>
+          </div>
+          <div>
+            <div className="k">{t('serviceDue')}</div>
+            <div className={`v ${s.serviceDue > 0 ? 'neg' : ''}`}>{money(s.serviceDue, cur)}</div>
           </div>
         </div>
-        <div className="card">
-          <div className="card-head">
-            <h3>🧾 {t('serviceCharge')}</h3>
-            <span className="badge blue">🔒 {t('member')} + {t('manager')}</span>
+        <AccResult value={s.serviceBalance} cur={cur} kind="service" />
+        {d.bills.length > 0 && (
+          <div className="kv mt small">
+            {d.bills.map((b) => (
+              <FragmentRow key={b.id} k={t(b.type)} v={`${money(b.share, cur)}`} sub={`${money(b.amount, cur)} ÷ ${n2(b.splitCount)}`} />
+            ))}
           </div>
-          {d.bills.length ? (
-            <div className="kv">
-              {d.bills.map((b) => (
-                <FragmentRow key={b.id} k={t(b.type)} v={`${money(b.share, cur)}`} sub={`${money(b.amount, cur)} ÷ ${n2(b.splitCount)}`} />
-              ))}
-              <span className="k bold">{t('serviceCharge')}</span>
-              <span className="bold">{money(s.serviceCharge, cur)}</span>
-              <span className="k">{t('serviceDeposit')}</span>
-              <span>{money(s.serviceDeposit, cur)}</span>
-              <span className="k bold">{t('serviceBalance')}</span>
-              <span className="bold">
-                <Balance value={s.serviceBalance} cur={cur} />
-              </span>
-            </div>
-          ) : (
-            <Empty />
-          )}
-        </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -151,6 +152,11 @@ export function DepositList({ deposits, cur }) {
 export function MembersTable({ rows, cur, month }) {
   if (!rows.length) return <Empty />;
   const sum = (k) => rows.reduce((s, r) => s + r[k], 0);
+  const bal = (v, kind) => {
+    if (Math.abs(v) < 0.005) return <span className="badge green">✓</span>;
+    if (v > 0) return <span className="pos">+{money(v, cur)}</span>;
+    return <span className="badge red">{money(-v, cur)}</span>;
+  };
   return (
     <>
       <div className="only-mobile">
@@ -161,8 +167,8 @@ export function MembersTable({ rows, cur, month }) {
               <Link to={`/app/members/${r.memberId}`} className="bold grow" style={{ color: 'var(--text)' }}>
                 {r.name}
               </Link>
-              {r.due > 0 ? <span className="badge red">{money(r.due, cur)}</span> : <span className="badge green">✓</span>}
             </div>
+            <div className="tiny bold mt">🍛 {t('mealAccount')}</div>
             <div className="nums">
               <div>
                 <div className="k">{t('meals')}</div>
@@ -173,18 +179,24 @@ export function MembersTable({ rows, cur, month }) {
                 <div className="v">{money(r.mealCost, cur)}</div>
               </div>
               <div>
-                <div className="k">{t('totalDeposit')}</div>
-                <div className="v">{money(r.totalDeposit, cur)}</div>
+                <div className="k">{t('mealDeposit')}</div>
+                <div className="v">{money(r.mealDeposit, cur)}</div>
               </div>
+            </div>
+            <div className="small mt">{bal(r.mealBalance)} <span className="tiny muted">({r.mealBalance >= 0 ? t('willGet') : t('willPay')})</span></div>
+            <div className="tiny bold mt">🧾 {t('serviceAccount')}</div>
+            <div className="nums">
               <div>
                 <div className="k">{t('serviceCharge')}</div>
                 <div className="v">{money(r.serviceCharge, cur)}</div>
               </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <div className="k">{t('netBalance')}</div>
-                <div className={`v ${r.net >= 0 ? 'pos' : 'neg'}`}>
-                  {money(Math.abs(r.net), cur)} <span className="tiny">({r.net >= 0 ? t('willGet') : t('willPay')})</span>
-                </div>
+              <div>
+                <div className="k">{t('serviceDeposit')}</div>
+                <div className="v">{money(r.serviceDeposit, cur)}</div>
+              </div>
+              <div>
+                <div className="k">{t('serviceDue')}</div>
+                <div className={`v ${r.serviceDue > 0 ? 'neg' : ''}`}>{money(r.serviceDue, cur)}</div>
               </div>
             </div>
             <Link className="btn sm mt block" to={`/invoice/${r.memberId}/${month}`}>
@@ -192,64 +204,65 @@ export function MembersTable({ rows, cur, month }) {
             </Link>
           </div>
         ))}
-        <div className="row between small" style={{ padding: '4px 2px' }}>
-          <b>{t('total')}</b>
-          <span>
-            {t('meals')} {num(sum('mealCount'))} · {t('due')} <b className="neg">{money(sum('due'), cur)}</b>
-          </span>
+        <div className="small" style={{ padding: '4px 2px' }}>
+          <b>{t('total')}</b> · {t('mealDue')} <b className="neg">{money(sum('mealDue'), cur)}</b> · {t('serviceDue')} <b className="neg">{money(sum('serviceDue'), cur)}</b>
         </div>
       </div>
-    <div className="table-wrap only-desktop">
-      <table>
-        <thead>
-          <tr>
-            <th>{t('name')}</th>
-            <th className="num">{t('meals')}</th>
-            <th className="num">{t('mealCost')}</th>
-            <th className="num">{t('mealDeposit')}</th>
-            <th className="num">{t('serviceCharge')}</th>
-            <th className="num">{t('serviceDeposit')}</th>
-            <th className="num">{t('netBalance')}</th>
-            <th className="num">{t('due')}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.memberId}>
-              <td>
-                <Link to={`/app/members/${r.memberId}`} className="bold" style={{ color: 'var(--text)' }}>
-                  {r.name}
-                </Link>
-              </td>
-              <td className="num">{num(r.mealCount)}</td>
-              <td className="num">{money(r.mealCost, cur)}</td>
-              <td className="num">{money(r.mealDeposit, cur)}</td>
-              <td className="num">{money(r.serviceCharge, cur)}</td>
-              <td className="num">{money(r.serviceDeposit, cur)}</td>
-              <td className={`num bold ${r.net >= 0 ? 'pos' : 'neg'}`}>{money(r.net, cur)}</td>
-              <td className="num">{r.due > 0 ? <span className="badge red">{money(r.due, cur)}</span> : <span className="badge green">✓</span>}</td>
-              <td>
-                <Link className="btn sm" to={`/invoice/${r.memberId}/${month}`}>
-                  🧾
-                </Link>
-              </td>
+      <div className="table-wrap only-desktop">
+        <table>
+          <thead>
+            <tr>
+              <th rowSpan="2">{t('name')}</th>
+              <th colSpan="4" className="center grp meal-grp">🍛 {t('mealAccount')}</th>
+              <th colSpan="3" className="center grp svc-grp">🧾 {t('serviceAccount')}</th>
+              <th rowSpan="2"></th>
             </tr>
-          ))}
-          <tr>
-            <td className="bold">{t('total')}</td>
-            <td className="num bold">{num(sum('mealCount'))}</td>
-            <td className="num bold">{money(sum('mealCost'), cur)}</td>
-            <td className="num bold">{money(sum('mealDeposit'), cur)}</td>
-            <td className="num bold">{money(sum('serviceCharge'), cur)}</td>
-            <td className="num bold">{money(sum('serviceDeposit'), cur)}</td>
-            <td className="num bold">{money(sum('net'), cur)}</td>
-            <td className="num bold">{money(sum('due'), cur)}</td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+            <tr>
+              <th className="num">{t('meals')}</th>
+              <th className="num">{t('mealCost')}</th>
+              <th className="num">{t('mealDeposit')}</th>
+              <th className="num">{t('mealBalance')}</th>
+              <th className="num">{t('serviceCharge')}</th>
+              <th className="num">{t('serviceDeposit')}</th>
+              <th className="num">{t('serviceDue')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.memberId}>
+                <td>
+                  <Link to={`/app/members/${r.memberId}`} className="bold" style={{ color: 'var(--text)' }}>
+                    {r.name}
+                  </Link>
+                </td>
+                <td className="num">{num(r.mealCount)}</td>
+                <td className="num">{money(r.mealCost, cur)}</td>
+                <td className="num">{money(r.mealDeposit, cur)}</td>
+                <td className="num bold">{bal(r.mealBalance)}</td>
+                <td className="num">{money(r.serviceCharge, cur)}</td>
+                <td className="num">{money(r.serviceDeposit, cur)}</td>
+                <td className="num bold">{r.serviceDue > 0 ? <span className="badge red">{money(r.serviceDue, cur)}</span> : <span className="badge green">✓</span>}</td>
+                <td>
+                  <Link className="btn sm" to={`/invoice/${r.memberId}/${month}`}>
+                    🧾
+                  </Link>
+                </td>
+              </tr>
+            ))}
+            <tr>
+              <td className="bold">{t('total')}</td>
+              <td className="num bold">{num(sum('mealCount'))}</td>
+              <td className="num bold">{money(sum('mealCost'), cur)}</td>
+              <td className="num bold">{money(sum('mealDeposit'), cur)}</td>
+              <td className="num bold neg">{money(sum('mealDue'), cur)}</td>
+              <td className="num bold">{money(sum('serviceCharge'), cur)}</td>
+              <td className="num bold">{money(sum('serviceDeposit'), cur)}</td>
+              <td className="num bold neg">{money(sum('serviceDue'), cur)}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

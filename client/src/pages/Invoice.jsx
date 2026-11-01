@@ -63,9 +63,17 @@ export default function Invoice() {
             </div>
           </div>
         </div>
-        <table style={{ marginTop: 20 }}>
+        <h4 style={{ marginTop: 20, color: '#047857' }}>🍛 {t('mealAccount')}</h4>
+        <table>
           <tbody>
             {row(`${t('myMeals')} (${num(s.mealCount)} × ${money(d.summary.mealRate, cur)})`, money(s.mealCost, cur))}
+            {row(t('mealDeposit'), `− ${money(s.mealDeposit, cur)}`)}
+            {row((s.mealBalance || 0) >= 0 ? t('willGet') : t('willPay'), money(Math.abs(s.mealBalance || 0), cur), true)}
+          </tbody>
+        </table>
+        <h4 style={{ marginTop: 20, color: '#0369a1' }}>🧾 {t('serviceAccount')}</h4>
+        <table>
+          <tbody>
             {d.bills.map((b) => (
               <tr key={b.id}>
                 <td>
@@ -74,10 +82,9 @@ export default function Invoice() {
                 <td className="num">{money(b.share, cur)}</td>
               </tr>
             ))}
-            {row(t('total'), money((s.mealCost || 0) + (s.serviceCharge || 0), cur), true)}
-            {row(t('mealDeposit'), `− ${money(s.mealDeposit, cur)}`)}
+            {row(t('yourShare'), money(s.serviceCharge || 0, cur), true)}
             {row(t('serviceDeposit'), `− ${money(s.serviceDeposit, cur)}`)}
-            {row(s.net >= 0 ? t('willGet') : t('willPay'), money(Math.abs(s.net || 0), cur), true)}
+            {row((s.serviceBalance || 0) >= 0 ? t('advance') : t('serviceDue'), money(Math.abs(s.serviceBalance || 0), cur), true)}
           </tbody>
         </table>
         {d.deposits.length > 0 && (

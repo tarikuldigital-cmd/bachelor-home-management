@@ -100,8 +100,8 @@ export default function Dashboard() {
           <div className="grid g4">
             <Stat label={t('totalMeals')} value={num(o.totalMeals)} ico="🍛" />
             <Stat label={t('totalBazar')} value={money(o.totalBazar, cur)} ico="🛒" />
-            <Stat label={t('totalBills')} value={money(o.totalBills, cur)} sub={`${t('perHead')}: ${money(o.memberCount ? o.totalBills / o.memberCount : 0, cur)}`} ico="🧾" />
-            <Stat label={t('totalDeposit')} value={money(o.totalDeposit, cur)} sub={`${t('due')}: ${money(o.rows.reduce((s, r) => s + r.due, 0), cur)}`} ico="💰" />
+            <Stat label={t('totalBills')} value={money(o.totalBills, cur)} sub={`${t('totalServicePaid')}: ${money(o.totalServicePaid, cur)} · ${t('serviceDue')}: ${money(o.rows.reduce((s, r) => s + r.serviceDue, 0), cur)}`} ico="🧾" />
+            <Stat label={t('totalDeposit')} value={money(o.totalDeposit, cur)} sub={`${t('mealDue')}: ${money(o.rows.reduce((s, r) => s + r.mealDue, 0), cur)}`} ico="💰" />
           </div>
           <div className="card">
             <div className="card-head">
