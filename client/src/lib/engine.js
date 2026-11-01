@@ -31,6 +31,7 @@ export function emptyDb() {
       currency: '৳',
       weights: { b: 0.5, l: 1, d: 1 },
       breakfastEnabled: false, // two meals a day: lunch + dinner
+      mealRateRound: 'round', // 'none' | 'round' | 'ceil' — e.g. 55.91 -> 56 like the notebook
       rules: DEFAULT_RULES,
       // Only the manager updates meals, bazar, deposits & bills (personal charges)
       membersCanEditMeals: false,
@@ -131,7 +132,9 @@ export function computeMonth(db, month) {
 
   const totalMeals = round2(meals.reduce((s, x) => s + mealTotal(x, w), 0));
   const totalBazar = round2(bazar.reduce((s, x) => s + Number(x.amount || 0), 0));
-  const mealRate = totalMeals > 0 ? totalBazar / totalMeals : 0;
+  const rawRate = totalMeals > 0 ? totalBazar / totalMeals : 0;
+  const rr = db.settings.mealRateRound;
+  const mealRate = rr === 'round' ? Math.round(rawRate) : rr === 'ceil' ? Math.ceil(rawRate) : rawRate;
   const totalBills = round2(bills.reduce((s, x) => s + Number(x.amount || 0), 0));
   const totalDeposit = round2(deposits.reduce((s, x) => s + Number(x.amount || 0), 0));
 
@@ -198,7 +201,7 @@ export function computeMonth(db, month) {
     totalMeals,
     totalBazar,
     mealRate: round2(mealRate),
-    mealRateExact: mealRate,
+    mealRateExact: round2(rawRate),
     totalBills,
     billsByType,
     totalDeposit,
@@ -265,7 +268,7 @@ export function createEngine(store, adapter) {
 
   // ----- public -----
   def('publicSummary', 'public', (db, p) => {
-    const month = p.month || monthOf(todayStr());
+    const month = p.month || defaultMonth(db);
     const c = computeMonth(db, month);
     const today = todayStr();
     const tomorrow = addDays(today, 1);
@@ -283,7 +286,7 @@ export function createEngine(store, adapter) {
       bazar: db.bazar
         .filter((x) => monthOf(x.date) === month)
         .sort((a, b) => b.date.localeCompare(a.date))
-        .map((x) => ({ id: x.id, date: x.date, items: x.items, amount: x.amount, by: db.members.find((m) => m.id === x.memberId)?.name || '' })),
+        .map((x) => ({ id: x.id, date: x.date, items: x.items, amount: x.amount, by: db.members.find((m) => m.id === x.memberId)?.name || 'Mess fund' })),
       todayMenu: menuOf(today),
       tomorrowMenu: menuOf(tomorrow),
       duties: db.duties
@@ -299,6 +302,15 @@ export function createEngine(store, adapter) {
       months: allMonths(db),
     };
   });
+
+  // current month if it has data, otherwise the latest month that has data
+  function defaultMonth(db) {
+    const cur = monthOf(todayStr());
+    const has = (m) => db.meals.some((x) => monthOf(x.date) === m) || db.bazar.some((x) => monthOf(x.date) === m);
+    if (has(cur)) return cur;
+    const list = allMonths(db).filter(has);
+    return list[0] || cur;
+  }
 
   function allMonths(db) {
     const set = new Set([monthOf(todayStr())]);
@@ -341,7 +353,7 @@ export function createEngine(store, adapter) {
     if (id !== me.id && me.role !== 'manager') throw new AppError('forbidden', 'You can only view your own profile');
     const m = db.members.find((x) => x.id === id);
     if (!m) throw new AppError('not_found', 'Member not found');
-    const month = p.month || monthOf(todayStr());
+    const month = p.month || defaultMonth(db);
     const c = computeMonth(db, month);
     const row = c.rows.find((r) => r.memberId === id) || null;
     const w = effWeights(db.settings);
@@ -456,14 +468,16 @@ export function createEngine(store, adapter) {
     return db.bazar
       .filter((x) => monthOf(x.date) === month)
       .sort((a, b) => b.date.localeCompare(a.date))
-      .map((x) => ({ ...x, by: db.members.find((m) => m.id === x.memberId)?.name || '' }));
+      .map((x) => ({ ...x, by: db.members.find((m) => m.id === x.memberId)?.name || 'Mess fund' }));
   });
   def('addBazar', 'member', (db, p, me) => {
     validDate(p.date);
     if (me.role !== 'manager') throw new AppError('forbidden', 'Only the manager can add bazar costs');
     const amount = num(p.amount);
     req(amount > 0, 'Enter an amount');
-    const item = { id: uid(), date: p.date, memberId: p.memberId || me.id, items: String(p.items || '').slice(0, 500), amount, by: me.id, createdAt: new Date().toISOString() };
+    const by = p.memberId === undefined ? me.id : String(p.memberId || '');
+    if (by) req(db.members.some((m) => m.id === by), 'Select a member');
+    const item = { id: uid(), date: p.date, memberId: by, items: String(p.items || '').slice(0, 500), amount, by: me.id, createdAt: new Date().toISOString() };
     if (p.id) {
       const e = db.bazar.find((x) => x.id === p.id);
       if (!e) throw new AppError('not_found');
@@ -502,7 +516,7 @@ export function createEngine(store, adapter) {
 
   // ----- manager -----
   def('overview', 'manager', (db, p) => {
-    const month = p.month || monthOf(todayStr());
+    const month = p.month || defaultMonth(db);
     const c = computeMonth(db, month);
     return { ...c, months: allMonths(db), currency: db.settings.currency };
   });
@@ -805,7 +819,7 @@ export function createEngine(store, adapter) {
   def('getSettings', 'manager', (db) => ({ ...db.settings, rules: Array.isArray(db.settings.rules) ? db.settings.rules : DEFAULT_RULES }));
   def('saveSettings', 'manager', (db, p) => {
     const s = db.settings;
-    const keys = ['breakfastEnabled', 'messName', 'address', 'currency', 'cookName', 'cookPhone', 'dueSmsTemplate', 'menuSmsTemplate', 'dutySmsTemplate', 'mealLockHour'];
+    const keys = ['mealRateRound', 'breakfastEnabled', 'messName', 'address', 'currency', 'cookName', 'cookPhone', 'dueSmsTemplate', 'menuSmsTemplate', 'dutySmsTemplate', 'mealLockHour'];
     keys.forEach((k) => {
       if (p[k] !== undefined) s[k] = p[k];
     });

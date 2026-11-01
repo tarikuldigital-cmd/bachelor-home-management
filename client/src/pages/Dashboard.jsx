@@ -12,10 +12,12 @@ import { MenuCard } from './Home.jsx';
 export default function Dashboard() {
   const { user, settings, isManager } = useAuth();
   const cur = settings?.currency || '৳';
-  const [month, setMonth] = useState(monthOf(todayStr()));
-  const mine = useApi(() => api('memberDetail', { month }), [month]);
-  const pub = useApi(() => api('publicSummary', { month }), [month]);
-  const ov = useApi(() => (isManager ? api('overview', { month }) : Promise.resolve(null)), [month, isManager]);
+  const [sel, setMonth] = useState('');
+  const q = sel ? { month: sel } : {};
+  const mine = useApi(() => api('memberDetail', q), [sel]);
+  const pub = useApi(() => api('publicSummary', q), [sel]);
+  const ov = useApi(() => (isManager ? api('overview', q) : Promise.resolve(null)), [sel, isManager]);
+  const month = mine.data?.month || sel || monthOf(todayStr());
 
   if (!mine.data || !pub.data) return <Spinner />;
   const d = mine.data;

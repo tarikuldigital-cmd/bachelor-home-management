@@ -17,10 +17,11 @@ export default function Profile() {
   const memberId = id || user.id;
   const slots = mealSlots(settings);
   const own = memberId === user.id;
-  const [month, setMonth] = useState(monthOf(todayStr()));
+  const [sel, setMonth] = useState('');
   const [tab, setTab] = useState('meals');
   const [editing, setEditing] = useState(false);
-  const { data: d, loading, error, reload } = useApi(() => api('memberDetail', { memberId, month }), [memberId, month]);
+  const { data: d, loading, error, reload } = useApi(() => api('memberDetail', sel ? { memberId, month: sel } : { memberId }), [memberId, sel]);
+  const month = d?.month || sel || monthOf(todayStr());
 
   if (error) return <div className="alert red">{error.message}</div>;
   if (loading && !d) return <Spinner />;

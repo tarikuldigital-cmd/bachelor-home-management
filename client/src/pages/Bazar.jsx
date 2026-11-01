@@ -100,7 +100,7 @@ export default function Bazar() {
           <div className="card-head">
             <h3>🛒 {t('recentBazar')}</h3>
             {canAdd && (
-              <button className="btn primary" onClick={() => setForm({ date: todayStr(), memberId: user.id, items: '', amount: '' })}>
+              <button className="btn primary" onClick={() => setForm({ date: todayStr(), memberId: '', items: '', amount: '' })}>
                 ＋ {t('add')}
               </button>
             )}
@@ -226,6 +226,7 @@ export default function Bazar() {
             {isManager && (
               <Field label={t('by')}>
                 <select className="input" value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })}>
+                  <option value="">🏦 {t('messFund')}</option>
                   {(members.data || []).map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name}

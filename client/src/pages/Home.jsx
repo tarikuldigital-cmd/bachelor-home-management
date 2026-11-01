@@ -86,8 +86,9 @@ export function PrefButtons() {
 
 export default function Home() {
   const { user } = useAuth();
-  const [month, setMonth] = useState(monthOf(todayStr()));
-  const { data, loading } = useApi(() => api('publicSummary', { month }), [month]);
+  const [sel, setMonth] = useState('');
+  const { data, loading } = useApi(() => api('publicSummary', sel ? { month: sel } : {}), [sel]);
+  const month = data?.month || sel || monthOf(todayStr());
 
   return (
     <>

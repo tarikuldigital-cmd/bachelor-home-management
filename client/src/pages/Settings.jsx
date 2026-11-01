@@ -116,6 +116,13 @@ function MessSettings() {
           </Field>
         </div>
         <div className="grid mt">
+          <Field label={t('mealRateRound')}>
+            <select className="input" style={{ maxWidth: 320 }} value={f.mealRateRound || 'none'} onChange={set('mealRateRound')}>
+              <option value="round">{t('roundNearest')}</option>
+              <option value="ceil">{t('roundUp')}</option>
+              <option value="none">{t('roundNone')}</option>
+            </select>
+          </Field>
           <b>🍽️ {t('mealsPerDay')}</b>
           <div className="tabs" style={{ width: 'fit-content' }}>
             <button type="button" className={!f.breakfastEnabled ? 'on' : ''} onClick={() => setF({ ...f, breakfastEnabled: false })}>

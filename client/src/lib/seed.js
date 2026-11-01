@@ -51,62 +51,8 @@ export async function seedDemo(hash) {
       createdAt: new Date().toISOString(),
     });
   });
-  let seed = 7;
-  const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
-  const prev = (() => {
-    const [y, m] = month.split('-').map(Number);
-    const d = new Date(y, m - 2, 1);
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-  })();
-  const plan = [
-    [prev, new Date(Number(prev.slice(0, 4)), Number(prev.slice(5, 7)), 0).getDate(), 3500],
-    [month, day, 2500],
-  ];
-  plan.forEach(([mo, lastDay, dep], k) => {
-    for (let d = 1; d <= lastDay; d++) {
-      const date = `${mo}-${pad(d)}`;
-      db.members.forEach((m) => {
-        const r = rnd();
-        if (r < 0.08) return;
-        db.meals.push({ id: `ml${k}${d}${m.id}`, memberId: m.id, date, b: 0, l: r < 0.3 ? 0 : 1, d: 1 });
-      });
-      if (d % 2 === 1 || d === lastDay) {
-        const m = db.members[(d >> 1) % db.members.length];
-        db.bazar.push({
-          id: `bz${k}-${d}`,
-          date,
-          memberId: m.id,
-          items: ['Rice, lentils, oil', 'Fish, vegetables', 'Chicken, onion, potato', 'Eggs, vegetables, spices'][d % 4],
-          amount: 900 + Math.round(rnd() * 900),
-        });
-      }
-    }
-    db.members.forEach((m, i) => {
-      db.deposits.push({ id: `dp${k}-${i}`, date: `${mo}-01`, memberId: m.id, amount: i === 2 ? dep - 1500 : dep, type: 'meal', note: '' });
-      if (i % 2 === 0 || k === 0) db.deposits.push({ id: `ds${k}-${i}`, date: `${mo}-01`, memberId: m.id, amount: 1330, type: 'service', note: '' });
-    });
-    [
-      ['electricity', 2400],
-      ['wifi', 1200],
-      ['buya', 3000],
-      ['garbage', 300],
-      ['gas', 1080],
-    ].forEach(([type, amount], i) => db.bills.push({ id: `bl${k}-${i}`, month: mo, type, amount, note: '', memberIds: [] }));
-  });
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  db.menus.push({ id: 'mn1', date: today, breakfast: '', lunch: 'Rice, rui fish, dal', dinner: 'Rice, chicken curry, vegetables', note: '' });
-  db.menus.push({ id: 'mn2', date: todayStr(tomorrow), breakfast: '', lunch: 'Rice, hilsa fish, greens', dinner: 'Rice, egg curry, dal', note: 'Less spicy' });
-  for (let i = 0; i < 6; i++) {
-    const dt = new Date();
-    dt.setDate(dt.getDate() + i * 2);
-    db.duties.push({ id: 'du' + i, date: todayStr(dt), memberId: db.members[(i + 1) % db.members.length].id, note: '' });
-  }
+  // Public demo: no real financial records. The real ledger lives only on your own server.
   db.members[0].managerSince = `${month}-01`;
-  db.managerHistory = [
-    { memberId: 'm3', name: 'Md. Tarikul', from: `${prev}-01`, to: `${month}-01`, note: 'Tk 1,200 cash handed over', by: 'm3' },
-    { memberId: 'm1', name: 'Mehedi Hasan', from: `${month}-01`, to: null, note: '', by: 'm3' },
-  ];
   db.notifications.push({ id: 'n1', to: 'all', text: 'Welcome to Bachelor Home Management! 🎉', kind: 'notice', date: new Date().toISOString(), readBy: [] });
   return db;
 }
