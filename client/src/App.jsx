@@ -37,11 +37,11 @@ export default function App() {
   const [settings, setSettings] = useState(null);
   const [booting, setBooting] = useState(true);
   const [lang, setLangState] = useState(getLang());
-  const [theme, setTheme] = useState(localStorage.getItem('bhm_theme') || 'dark');
+  const [theme, setTheme] = useState(localStorage.getItem('bhm_theme_v2') || 'light');
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem('bhm_theme', theme);
+    localStorage.setItem('bhm_theme_v2', theme);
     document.querySelector('meta[name=theme-color]')?.setAttribute('content', theme === 'dark' ? '#0a0f0d' : '#f3f7f5');
   }, [theme]);
 

@@ -3,6 +3,6 @@
   "appName": "Bachelor Home",
   "webDir": "dist",
   "android": {
-    "backgroundColor": "#0a0f0d"
+    "backgroundColor": "#f3f7f5"
   }
 }
