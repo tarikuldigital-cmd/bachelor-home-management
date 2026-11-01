@@ -3,7 +3,8 @@ import { t, getLang } from '../lib/i18n.js';
 
 // Headlines are collected every 3 hours by GitHub Actions into news.json (see scripts/fetch-news.mjs).
 const PUBLIC_NEWS = 'https://tarikuldigital-cmd.github.io/bachelor-home-management/news.json';
-const newsUrl = () => window.__NEWS_URL || (window.Capacitor || /localhost|127\.0\.0\.1/.test(location.hostname) ? PUBLIC_NEWS : './news.json');
+// On GitHub Pages read the local copy; everywhere else (own domain, Android app) read the public one.
+const newsUrl = () => window.__NEWS_URL || (location.hostname.endsWith('github.io') ? './news.json' : PUBLIC_NEWS);
 
 function ago(iso) {
   if (!iso) return '';
