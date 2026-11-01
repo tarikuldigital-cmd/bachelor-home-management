@@ -2,6 +2,7 @@
 
 <h1 align="center">Bachelor Home Management</h1>
 <p align="center">ব্যাচেলর মেসের মিল, বাজার, জমা, সার্ভিস চার্জ, বাবুর্চির মেনু আর SMS এর সম্পূর্ণ হিসাব (React JS)</p>
+<p align="center"><b>লাইভ: <a href="https://bachelorhome.online">bachelorhome.online</a></b></p>
 
 ---
 

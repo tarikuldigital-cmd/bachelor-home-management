@@ -25,6 +25,8 @@ jobs:
 
       - name: Install & build web app
         working-directory: client
+        env:
+          VITE_API_URL: https://bachelorhome.online   # the app talks to the live server (shared data)
         run: |
           npm ci
           npm run build
