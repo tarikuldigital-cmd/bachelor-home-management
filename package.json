@@ -1,0 +1,13 @@
+{
+  "name": "bachelor-home-management",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bachelor Home Management — mess meal, bazar, deposit, service charge & SMS manager (React)",
+  "scripts": {
+    "install:all": "npm --prefix client install",
+    "dev": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "build:server": "cd client && VITE_API_URL=same npm run build",
+    "start": "node server/index.js"
+  }
+}
