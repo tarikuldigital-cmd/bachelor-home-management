@@ -16,7 +16,8 @@ loadEnv(path.join(__dirname, '.env'));
 const PORT = Number(process.env.PORT || 4000);
 const DATA_FILE = path.resolve(__dirname, process.env.DATA_FILE || './data/db.json');
 const SECRET = process.env.JWT_SECRET || 'change-this-secret';
-const STATIC_DIR = path.resolve(__dirname, '../client/dist');
+// Built site: client/dist by default, or STATIC_DIR (e.g. a clone of the gh-pages branch)
+const STATIC_DIR = path.resolve(__dirname, process.env.STATIC_DIR || '../client/dist');
 const ALLOWED_ORIGIN = process.env.CORS_ORIGIN || '*';
 
 if (SECRET === 'change-this-secret') console.warn('⚠️  Set JWT_SECRET in server/.env before going live!');
