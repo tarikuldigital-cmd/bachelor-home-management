@@ -5,6 +5,7 @@ import { t, n2 } from '../lib/i18n.js';
 import { Brand, Avatar } from '../components/ui.jsx';
 import { useAuth } from '../App.jsx';
 import { PrefButtons } from './Home.jsx';
+import { RulesTicker } from '../components/RulesTicker.jsx';
 
 export function navItems(isManager) {
   return [
@@ -99,6 +100,7 @@ export default function Layout() {
             </Link>
             <PrefButtons />
           </div>
+          <RulesTicker path={loc.pathname} />
         </div>
         <div className="page">
           <Outlet />

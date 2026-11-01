@@ -211,6 +211,8 @@ const D = {
   footDesc: ['ব্যাচেলর মেসের মিল, বাজার, জমা, সার্ভিস চার্জ আর বাবুর্চির মেনু — এক জায়গায়, স্বচ্ছভাবে।', 'Meals, bazar, deposits, service charges and the cook’s menu for our bachelor mess, in one open place.'],
   rightsReserved: ['সর্বস্বত্ব সংরক্ষিত।', 'All rights reserved.'],
   designedBy: ['ডিজাইন ও ডেভেলপ করেছেন', 'Designed & developed by'],
+  tickerDue: ['অনুগ্রহ করে আপনার বকেয়া পরিশোধ করুন', 'Please clear your due'],
+  important: ['জরুরি', 'Important'],
   mealsPerDay: ['দিনে কয়বেলা রান্না', 'Meals per day'],
   twoMeals: ['২ বেলা (দুপুর + রাত)', '2 meals (Lunch + Dinner)'],
   threeMeals: ['৩ বেলা (সকাল + দুপুর + রাত)', '3 meals (Breakfast + Lunch + Dinner)'],
