@@ -60,6 +60,9 @@ export default function Login() {
             </button>
           </form>
         </div>
+        <div className="login-credit">
+          {t('designedBy')} <b>Tariqul Islam</b>
+        </div>
       </div>
     </div>
   );

@@ -85,8 +85,10 @@ export function TrendCard({ month, cur = '৳' }) {
 
   useEffect(() => {
     // keep the selected month visible in the month slider
-    const el = scroller.current?.querySelector('.mslide.sel');
-    if (el) el.scrollIntoView({ block: 'nearest', inline: 'center' });
+    // scroll only the slider sideways (never the page)
+    const box = scroller.current;
+    const el = box?.querySelector('.mslide.sel');
+    if (box && el) box.scrollLeft = el.offsetLeft - box.clientWidth / 2 + el.clientWidth / 2;
   }, [data, month]);
 
   if (loading && !data) return <Spinner />;

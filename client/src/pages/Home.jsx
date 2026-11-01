@@ -8,6 +8,7 @@ import { Brand, Stat, MonthPicker, Bars, Empty, Spinner, useApi, Avatar } from '
 import { useAuth, usePrefs } from '../App.jsx';
 import { getLang } from '../lib/i18n.js';
 import { TrendCard } from '../components/Trend.jsx';
+import { Hero3D } from '../components/Hero3D.jsx';
 
 export function RulesAlert({ rules }) {
   if (!rules || !rules.length) return null;
@@ -155,35 +156,20 @@ export default function Home() {
           <Spinner />
         ) : (
           <>
-            <section className="hero">
-              <div className="row between" style={{ alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
-                <div>
-                  <div className="small" style={{ opacity: 0.85 }}>
-                    🏠 {data.messName}
-                    {data.address ? ` · ${data.address}` : ''}
-                  </div>
-                  <h1 style={{ marginTop: 6 }}>{monthLabel(month)}</h1>
-                  <p>{t('tagline')}</p>
-                  {data.manager && (
-                    <div className="row mt" style={{ gap: 8 }}>
-                      <Avatar src={data.manager.photo} name={data.manager.name} size={34} />
-                      <div className="small">
-                        <div style={{ opacity: 0.8 }}>⭐ {t('managerOfMonth')}</div>
-                        <b>{data.manager.name}</b>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="right">
-                  <div className="small" style={{ opacity: 0.85 }}>{t('runningMealRate')}</div>
-                  <div className="rate">{money(data.mealRate, data.currency)}</div>
-                  <div className="tiny" style={{ opacity: 0.75 }}>{t('howRate')}</div>
-                </div>
-              </div>
-            </section>
+            <Hero3D data={data} month={month} user={user} />
 
-            <div className="row between mt">
-              <h3>📊 {t('month')}</h3>
+            <div className="row between mt2" id="this-month">
+              <div className="row" style={{ gap: 12 }}>
+                <h3>📊 {t('month')}</h3>
+                {data.manager && (
+                  <span className="row manager-chip" style={{ gap: 8 }}>
+                    <Avatar src={data.manager.photo} name={data.manager.name} size={28} />
+                    <span className="small">
+                      ⭐ {t('managerOfMonth')}: <b>{data.manager.name}</b>
+                    </span>
+                  </span>
+                )}
+              </div>
               <MonthPicker value={month} months={data.months} onChange={setMonth} />
             </div>
 
@@ -275,8 +261,38 @@ export default function Home() {
             </div>
           </>
         )}
-        <footer className="foot">© {new Date().getFullYear()} Bachelor Home Management</footer>
       </main>
+      <footer className="site-foot">
+        <div className="container inner">
+          <div>
+            <div className="fbrand">
+              <img src="./logo.svg" width="40" height="40" alt="" style={{ borderRadius: 11 }} />
+              <div>
+                <b>{data?.messName || 'Bachelor Home'}</b>
+                <div className="tiny muted">Management</div>
+              </div>
+            </div>
+            <p className="fdesc">{t('footDesc')}</p>
+          </div>
+          <nav className="flinks" aria-label="footer">
+            <Link to="/">{t('home')}</Link>
+            <a href="#this-month">{t('seeThisMonth')}</a>
+            <Link to={user ? '/app' : '/login'}>{user ? t('dashboard') : t('login')}</Link>
+            {!window.Capacitor && <a href={APK_URL}>{t('downloadApk')}</a>}
+          </nav>
+        </div>
+        <div className="container fbottom">
+          <span>
+            © {new Date().getFullYear()} {data?.messName || 'Bachelor Home'}. {t('rightsReserved')}
+          </span>
+          <span className="credit">
+            <span className="mark">TI</span>
+            <span>
+              {t('designedBy')} <span className="dev">Tariqul Islam</span>
+            </span>
+          </span>
+        </div>
+      </footer>
     </>
   );
 }
