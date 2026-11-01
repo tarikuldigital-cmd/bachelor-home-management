@@ -10,12 +10,14 @@ export default function Sms() {
   const { settings } = useAuth();
   const cur = settings?.currency || '৳';
   const toast = useToast();
-  const [month, setMonth] = useState(monthOf(todayStr()));
+  const [msel, setMonth] = useState('');
+  const q = msel ? { month: msel } : {};
   const [tab, setTab] = useState('due');
-  const dues = useApi(() => api('dueList', { month }), [month]);
+  const dues = useApi(() => api('dueList', q), [msel]);
   const members = useApi(() => api('listMembers'), []);
   const log = useApi(() => api('smsLog'), []);
-  const ov = useApi(() => api('overview', { month }), [month]);
+  const ov = useApi(() => api('overview', q), [msel]);
+  const month = ov.data?.month || msel || monthOf(todayStr());
   const [sel, setSel] = useState([]);
   const [custom, setCustom] = useState({ ids: [], message: '', alsoNotify: true });
   const [busy, setBusy] = useState(false);

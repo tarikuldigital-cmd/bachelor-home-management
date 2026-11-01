@@ -267,3 +267,31 @@ footer.foot { color: var(--muted); font-size: 13px; text-align: center; padding:
 .rules-list li::marker { color: var(--warn); font-weight: 700; }
 @media (min-width: 900px) { .rules-list { grid-template-columns: 1fr 1fr; column-gap: 32px; } }
 .card.sel { border-color: var(--primary); background: var(--primary-soft); }
+
+/* ---- mobile polish ---- */
+.grid > *, .row > .grow, .main, .card { min-width: 0; }
+.only-mobile { display: none; }
+@media (max-width: 640px) {
+  .only-desktop { display: none !important; }
+  .only-mobile { display: block; }
+  .card { padding: 14px; }
+  .table-wrap { margin: 0 -14px; padding: 0 14px; }
+  .card-head h3 { font-size: 15px; }
+  .main-head h2 { font-size: 16px; }
+  .main-head .icon-btn { width: 34px; height: 34px; }
+  .kv { grid-template-columns: 120px 1fr; font-size: 13.5px; }
+  .tabs button { padding: 7px 10px; font-size: 13.5px; }
+  .modal-bg { padding: 0; align-items: end; }
+  .modal { border-radius: 20px 20px 0 0; max-height: 94vh; }
+  .profile-hero { gap: 12px; }
+  .input { font-size: 16px; } /* stops iOS zoom on focus */
+  .demo-banner { font-size: 11.5px; padding: 5px 10px; }
+}
+.mcard { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--card2); margin-bottom: 10px; }
+.mcard .top { display: flex; align-items: center; gap: 10px; }
+.mcard .nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+.mcard .nums div { background: var(--bg2); border-radius: 10px; padding: 6px 8px; }
+.mcard .nums .k { font-size: 11px; color: var(--muted); }
+.mcard .nums .v { font-weight: 700; font-size: 14px; font-family: 'Inter', 'Hind Siliguri', sans-serif; }
+.tabs { max-width: 100%; }
+@media (max-width: 640px) { .tabs button { white-space: normal; } }

@@ -124,7 +124,7 @@ function MessSettings() {
             </select>
           </Field>
           <b>🍽️ {t('mealsPerDay')}</b>
-          <div className="tabs" style={{ width: 'fit-content' }}>
+          <div className="tabs" style={{ width: 'fit-content', maxWidth: '100%', flexWrap: 'wrap' }}>
             <button type="button" className={!f.breakfastEnabled ? 'on' : ''} onClick={() => setF({ ...f, breakfastEnabled: false })}>
               {t('twoMeals')}
             </button>

@@ -4,7 +4,7 @@ import { api } from '../lib/api.js';
 import { t, n2 } from '../lib/i18n.js';
 import { money, num, dateLabel } from '../lib/util.js';
 import { monthOf, todayStr } from '../lib/engine.js';
-import { Stat, MonthPicker, Bars, Spinner, useApi, Avatar } from '../components/ui.jsx';
+import { Stat, MonthPicker, Bars, Spinner, useApi, Avatar, Empty } from '../components/ui.jsx';
 import { AccountStats, DueAlert, MembersTable } from '../components/Account.jsx';
 import { useAuth } from '../App.jsx';
 import { MenuCard } from './Home.jsx';
@@ -91,7 +91,7 @@ export default function Dashboard() {
               <span>{x.name}</span>
             </div>
           ))}
-          {!pub.data.duties.length && <div className="muted small">{n2(0)}</div>}
+          {!pub.data.duties.length && <Empty />}
         </div>
       </div>
     </div>

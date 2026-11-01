@@ -10,12 +10,14 @@ export default function Bazar() {
   const { user, isManager, settings } = useAuth();
   const cur = settings?.currency || '৳';
   const toast = useToast();
-  const [month, setMonth] = useState(monthOf(todayStr()));
+  const [sel, setMonth] = useState('');
+  const q = sel ? { month: sel } : {};
   const [tab, setTab] = useState('bazar');
-  const list = useApi(() => api('listBazar', { month }), [month]);
-  const duties = useApi(() => api('listDuties', { month }), [month]);
+  const list = useApi(() => api('listBazar', q), [sel]);
+  const duties = useApi(() => api('listDuties', q), [sel]);
   const members = useApi(() => api('directory'), []);
-  const pub = useApi(() => api('publicSummary', { month }), [month]);
+  const pub = useApi(() => api('publicSummary', q), [sel]);
+  const month = pub.data?.month || sel || monthOf(todayStr());
   const [form, setForm] = useState(null);
   const [dutyForm, setDutyForm] = useState(null);
   const [every, setEvery] = useState(2);

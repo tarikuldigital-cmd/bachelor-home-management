@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { t, n2 } from '../lib/i18n.js';
 import { money, num, dateLabel, monthLabel } from '../lib/util.js';
-import { Stat, Balance, Empty } from './ui.jsx';
+import { Stat, Balance, Empty, Avatar } from './ui.jsx';
 
 // Personal account block — only shown after login (member sees own, manager sees anyone)
 export function DueAlert({ stats, cur, month }) {
@@ -152,7 +152,54 @@ export function MembersTable({ rows, cur, month }) {
   if (!rows.length) return <Empty />;
   const sum = (k) => rows.reduce((s, r) => s + r[k], 0);
   return (
-    <div className="table-wrap">
+    <>
+      <div className="only-mobile">
+        {rows.map((r) => (
+          <div className="mcard" key={r.memberId}>
+            <div className="top">
+              <Avatar src={r.photo} name={r.name} size={36} />
+              <Link to={`/app/members/${r.memberId}`} className="bold grow" style={{ color: 'var(--text)' }}>
+                {r.name}
+              </Link>
+              {r.due > 0 ? <span className="badge red">{money(r.due, cur)}</span> : <span className="badge green">✓</span>}
+            </div>
+            <div className="nums">
+              <div>
+                <div className="k">{t('meals')}</div>
+                <div className="v">{num(r.mealCount)}</div>
+              </div>
+              <div>
+                <div className="k">{t('mealCost')}</div>
+                <div className="v">{money(r.mealCost, cur)}</div>
+              </div>
+              <div>
+                <div className="k">{t('totalDeposit')}</div>
+                <div className="v">{money(r.totalDeposit, cur)}</div>
+              </div>
+              <div>
+                <div className="k">{t('serviceCharge')}</div>
+                <div className="v">{money(r.serviceCharge, cur)}</div>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <div className="k">{t('netBalance')}</div>
+                <div className={`v ${r.net >= 0 ? 'pos' : 'neg'}`}>
+                  {money(Math.abs(r.net), cur)} <span className="tiny">({r.net >= 0 ? t('willGet') : t('willPay')})</span>
+                </div>
+              </div>
+            </div>
+            <Link className="btn sm mt block" to={`/invoice/${r.memberId}/${month}`}>
+              🧾 {t('invoice')}
+            </Link>
+          </div>
+        ))}
+        <div className="row between small" style={{ padding: '4px 2px' }}>
+          <b>{t('total')}</b>
+          <span>
+            {t('meals')} {num(sum('mealCount'))} · {t('due')} <b className="neg">{money(sum('due'), cur)}</b>
+          </span>
+        </div>
+      </div>
+    <div className="table-wrap only-desktop">
       <table>
         <thead>
           <tr>
@@ -203,5 +250,6 @@ export function MembersTable({ rows, cur, month }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }

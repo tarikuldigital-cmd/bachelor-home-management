@@ -8,3 +8,8 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 );
+
+// Installable app: register the service worker (not inside the Android app wrapper)
+if ('serviceWorker' in navigator && import.meta.env.PROD && !window.Capacitor) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}

@@ -464,7 +464,7 @@ export function createEngine(store, adapter) {
 
   // bazar
   def('listBazar', 'member', (db, p) => {
-    const month = p.month || monthOf(todayStr());
+    const month = p.month || defaultMonth(db);
     return db.bazar
       .filter((x) => monthOf(x.date) === month)
       .sort((a, b) => b.date.localeCompare(a.date))
@@ -501,7 +501,7 @@ export function createEngine(store, adapter) {
 
   // duties
   def('listDuties', 'member', (db, p) => {
-    const month = p.month || monthOf(todayStr());
+    const month = p.month || defaultMonth(db);
     return db.duties
       .filter((x) => monthOf(x.date) === month)
       .sort((a, b) => a.date.localeCompare(b.date))
@@ -605,7 +605,7 @@ export function createEngine(store, adapter) {
   });
 
   def('listDeposits', 'manager', (db, p) => {
-    const month = p.month || monthOf(todayStr());
+    const month = p.month || defaultMonth(db);
     return db.deposits
       .filter((x) => monthOf(x.date) === month)
       .sort((a, b) => b.date.localeCompare(a.date))
@@ -634,7 +634,7 @@ export function createEngine(store, adapter) {
   });
 
   def('listBills', 'member', (db, p) => {
-    const month = p.month || monthOf(todayStr());
+    const month = p.month || defaultMonth(db);
     return db.bills.filter((x) => x.month === month);
   });
   def('saveBill', 'manager', (db, p, me) => {
@@ -766,7 +766,7 @@ export function createEngine(store, adapter) {
   });
 
   def('dueList', 'manager', (db, p) => {
-    const month = p.month || monthOf(todayStr());
+    const month = p.month || defaultMonth(db);
     const c = computeMonth(db, month);
     return c.rows
       .filter((r) => r.due > 0)
@@ -776,7 +776,7 @@ export function createEngine(store, adapter) {
       }));
   });
   def('sendDueSms', 'manager', async (db, p) => {
-    const month = p.month || monthOf(todayStr());
+    const month = p.month || defaultMonth(db);
     const c = computeMonth(db, month);
     const results = [];
     for (const id of p.memberIds || []) {

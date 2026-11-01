@@ -10,10 +10,12 @@ export default function Deposits() {
   const { settings } = useAuth();
   const cur = settings?.currency || '৳';
   const toast = useToast();
-  const [month, setMonth] = useState(monthOf(todayStr()));
-  const list = useApi(() => api('listDeposits', { month }), [month]);
+  const [sel, setMonth] = useState('');
+  const q = sel ? { month: sel } : {};
+  const list = useApi(() => api('listDeposits', q), [sel]);
   const members = useApi(() => api('listMembers'), []);
-  const ov = useApi(() => api('overview', { month }), [month]);
+  const ov = useApi(() => api('overview', q), [sel]);
+  const month = ov.data?.month || sel || monthOf(todayStr());
   const [form, setForm] = useState(null);
 
   const save = async () => {

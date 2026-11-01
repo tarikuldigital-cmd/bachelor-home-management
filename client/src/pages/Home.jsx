@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api, DEMO } from '../lib/api.js';
 import { t, n2 } from '../lib/i18n.js';
@@ -66,6 +66,43 @@ export function MenuCard({ title, menu, badge }) {
       ) : (
         <Empty text={t('noMenu')} />
       )}
+    </div>
+  );
+}
+
+export const APK_URL = 'https://github.com/tarikuldigital-cmd/bachelor-home-management/releases/download/app-latest/BachelorHome.apk';
+
+// Download / install card — hidden inside the Android app itself
+export function AppDownload() {
+  const [prompt, setPrompt] = useState(null);
+  useEffect(() => {
+    const h = (e) => {
+      e.preventDefault();
+      setPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', h);
+    return () => window.removeEventListener('beforeinstallprompt', h);
+  }, []);
+  if (window.Capacitor) return null;
+  return (
+    <div className="card mt app-card">
+      <div className="row" style={{ flexWrap: 'nowrap' }}>
+        <img src="./icons/icon-192.png" width="54" height="54" alt="" style={{ borderRadius: 14 }} />
+        <div className="grow">
+          <h3>📱 {t('getApp')}</h3>
+          <div className="small muted">{t('getAppSub')}</div>
+        </div>
+      </div>
+      <div className="row mt">
+        <a className="btn primary" href={APK_URL}>
+          ⬇️ {t('downloadApk')}
+        </a>
+        {prompt && (
+          <button className="btn" onClick={() => prompt.prompt()}>
+            ➕ {t('installApp')}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -220,6 +257,8 @@ export default function Home() {
                 <Empty />
               )}
             </div>
+
+            <AppDownload />
 
             <RulesAlert rules={data.rules} />
 
