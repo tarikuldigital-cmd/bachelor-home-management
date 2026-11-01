@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { t } from '../lib/i18n.js';
-import { DEMO } from '../lib/api.js';
 import { Logo, Field } from '../components/ui.jsx';
 import { useAuth } from '../App.jsx';
 import { PrefButtons } from './Home.jsx';
@@ -60,21 +59,6 @@ export default function Login() {
               {busy ? '...' : `🔐 ${t('login')}`}
             </button>
           </form>
-          {DEMO && (
-            <div className="alert amber small mt">
-              <div>
-                <b>Demo:</b> mehedi / 1234 ({t('manager')}) · tariqul / 1234 ({t('member')})
-                <div className="row mt" style={{ gap: 6 }}>
-                  <button className="btn sm" onClick={() => { setU('mehedi'); setP('1234'); }}>
-                    {t('manager')}
-                  </button>
-                  <button className="btn sm" onClick={() => { setU('tariqul'); setP('1234'); }}>
-                    {t('member')}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

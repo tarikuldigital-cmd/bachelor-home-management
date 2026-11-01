@@ -83,8 +83,7 @@ export default function Layout() {
       </aside>
 
       <div className="main">
-        {DEMO && <div className="demo-banner">{t('demoBanner')}</div>}
-        <div className="main-head">
+          <div className="main-head">
           <div className="inner">
             <h2 className="grow">{titleFor(loc.pathname, items)}</h2>
             <Link to="/" className="btn ghost icon-btn" title={t('home')}>

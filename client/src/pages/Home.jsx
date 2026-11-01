@@ -129,7 +129,6 @@ export default function Home() {
 
   return (
     <>
-      {DEMO && <div className="demo-banner">{t('demoBanner')}</div>}
       <header className="topbar">
         <div className="container inner">
           <Link to="/">
