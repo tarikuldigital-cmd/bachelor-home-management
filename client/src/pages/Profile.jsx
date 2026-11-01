@@ -62,6 +62,9 @@ export default function Profile() {
             </div>
           </div>
           <div className="row">
+            <Link className="btn" to="/">
+              🏠 {t('homePage')}
+            </Link>
             <MonthPicker value={month} months={d.months} onChange={setMonth} />
             <Link className="btn" to={`/invoice/${m.id}/${month}`}>
               🧾 {t('invoice')}
@@ -143,9 +146,21 @@ export default function Profile() {
         </div>
       </div>
 
-      <DueAlert stats={d.stats} cur={cur} month={month} />
-      <AccountStats d={d} cur={cur} />
-      <Statement d={d} cur={cur} />
+      {d.stats ? (
+        <>
+          <DueAlert stats={d.stats} cur={cur} month={month} />
+          <AccountStats d={d} cur={cur} />
+          <Statement d={d} cur={cur} />
+        </>
+      ) : (
+        <div className="alert amber">
+          <span style={{ fontSize: 24 }}>📒</span>
+          <div className="grow small">
+            <b>{t('noAccountYet')}</b>
+            <div>{isManager ? t('archivedManager') : t('noAccountYetSub')}</div>
+          </div>
+        </div>
+      )}
 
       {d.duties.length > 0 && (
         <div className="alert amber">

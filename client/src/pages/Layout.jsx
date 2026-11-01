@@ -67,7 +67,13 @@ export default function Layout() {
         <Link to="/">
           <Brand name={settings?.messName} />
         </Link>
-        <nav className="nav">{items.map(link)}</nav>
+        <nav className="nav">
+          <Link to="/" className="home-link">
+            <span className="ico">🏠</span>
+            {t('homePage')}
+          </Link>
+          {items.map(link)}
+        </nav>
         <div style={{ height: 16 }} />
         <div className="user-chip">
           <Avatar src={user.photo} name={user.name} size={38} />
@@ -134,7 +140,13 @@ export default function Layout() {
                 {t('logout')}
               </button>
             </div>
-            <nav className="nav">{items.map(link)}</nav>
+            <nav className="nav">
+              <Link to="/" className="home-link">
+                <span className="ico">🏠</span>
+                {t('homePage')}
+              </Link>
+              {items.map(link)}
+            </nav>
           </div>
         </>
       )}

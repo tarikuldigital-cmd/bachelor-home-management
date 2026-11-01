@@ -509,3 +509,4 @@ th.svc-grp { background: var(--info-soft); }
 .news-foot { padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
 @media (max-width: 640px) { .news-fab { right: 12px; bottom: 14px; padding: 8px 12px; font-size: 13px; } }
 @media (max-width: 380px) { .brand .t2 { display: none; } .brand img { width: 32px; height: 32px; } .brand .t1 { font-size: 14px; } .topbar .btn.primary { padding: 8px 10px; font-size: 13px; } .topbar .icon-btn { width: 32px; } }
+.nav a.home-link { border: 1px dashed var(--border); margin-bottom: 6px; }
