@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, DEMO, resetDemo } from '../lib/api.js';
 import { t } from '../lib/i18n.js';
 import { download } from '../lib/util.js';
+import { mealSlots, SLOT_KEY } from '../lib/engine.js';
 import { Field, useApi, useToast } from '../components/ui.jsx';
 import { useAuth, usePrefs } from '../App.jsx';
 
@@ -38,9 +39,10 @@ function ChangePassword() {
 }
 
 function MyMealTemplate() {
-  const { user, refresh } = useAuth();
+  const { user, refresh, settings } = useAuth();
   const toast = useToast();
-  const [dm, setDm] = useState(user.defaultMeals || { b: 1, l: 1, d: 1 });
+  const slots = mealSlots(settings);
+  const [dm, setDm] = useState(user.defaultMeals || { b: 0, l: 1, d: 1 });
   const [phone, setPhone] = useState(user.phone || '');
   return (
     <div className="card">
@@ -51,9 +53,9 @@ function MyMealTemplate() {
         </Field>
         <Field label={t('defaultMeals')}>
           <div className="row">
-            {['b', 'l', 'd'].map((k) => (
+            {slots.map((k) => (
               <label key={k} className="row small" style={{ gap: 6 }}>
-                {t({ b: 'breakfast', l: 'lunch', d: 'dinner' }[k])}
+                {t(SLOT_KEY[k])}
                 <input className="input" style={{ width: 70 }} type="number" min="0" step="0.5" value={dm[k]} onChange={(e) => setDm({ ...dm, [k]: Number(e.target.value) })} />
               </label>
             ))}
@@ -120,8 +122,8 @@ function MessSettings() {
           </Field>
           <Field label={t('weights')}>
             <div className="row" style={{ gap: 6 }}>
-              {['b', 'l', 'd'].map((k) => (
-                <input key={k} className="input" style={{ width: 80 }} type="number" step="0.25" min="0" value={f.weights[k]} onChange={(e) => setF({ ...f, weights: { ...f.weights, [k]: e.target.value } })} />
+              {mealSlots(f).map((k) => (
+                <input key={k} title={t(SLOT_KEY[k])} className="input" style={{ width: 80 }} type="number" step="0.25" min="0" value={f.weights[k]} onChange={(e) => setF({ ...f, weights: { ...f.weights, [k]: e.target.value } })} />
               ))}
             </div>
           </Field>
@@ -130,6 +132,15 @@ function MessSettings() {
           </Field>
         </div>
         <div className="grid mt">
+          <b>🍽️ {t('mealsPerDay')}</b>
+          <div className="tabs" style={{ width: 'fit-content' }}>
+            <button type="button" className={!f.breakfastEnabled ? 'on' : ''} onClick={() => setF({ ...f, breakfastEnabled: false })}>
+              {t('twoMeals')}
+            </button>
+            <button type="button" className={f.breakfastEnabled ? 'on' : ''} onClick={() => setF({ ...f, breakfastEnabled: true })}>
+              {t('threeMeals')}
+            </button>
+          </div>
           <b>{t('permissions')}</b>
           <label className="check">
             <input type="checkbox" checked={f.membersCanEditMeals} onChange={set('membersCanEditMeals')} /> {t('membersCanEditMeals')}

@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { api, DEMO } from '../lib/api.js';
 import { t } from '../lib/i18n.js';
 import { dateLabel, smsLink, timeAgo } from '../lib/util.js';
-import { todayStr, addDays } from '../lib/engine.js';
+import { todayStr, addDays, mealSlots, SLOT_KEY } from '../lib/engine.js';
 import { Modal, Field, Spinner, useApi, useToast, Empty } from '../components/ui.jsx';
 import { useAuth } from '../App.jsx';
 import { MenuCard } from './Home.jsx';
 
 export default function Menu() {
-  const { isManager } = useAuth();
+  const { isManager, settings: appSettings } = useAuth();
+  const slots = mealSlots(appSettings);
   const toast = useToast();
   const list = useApi(() => api('listMenus', { from: addDays(todayStr(), -14) }), []);
   const settings = useApi(() => (isManager ? api('getSettings') : Promise.resolve(null)), [isManager]);
@@ -172,7 +173,7 @@ export default function Menu() {
             <Field label={t('date')}>
               <input className="input" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
             </Field>
-            {['breakfast', 'lunch', 'dinner'].map((k) => (
+            {slots.map((s) => SLOT_KEY[s]).map((k) => (
               <Field key={k} label={t(k)}>
                 <input className="input" value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
               </Field>

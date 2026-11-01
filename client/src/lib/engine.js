@@ -12,6 +12,7 @@ export function emptyDb() {
       address: '',
       currency: '৳',
       weights: { b: 0.5, l: 1, d: 1 },
+      breakfastEnabled: false, // two meals a day: lunch + dinner
       membersCanEditMeals: true,
       membersCanAddBazar: true,
       mealLockHour: 22, // members can edit tomorrow's meal until this hour today
@@ -68,6 +69,12 @@ function directoryMember(m) {
   return { id: m.id, name: m.name, photo: m.photo, room: m.room, role: m.role, active: m.active, profession: m.profession, district: m.district };
 }
 
+// which meal slots this mess cooks
+export function mealSlots(settings) {
+  return settings && settings.breakfastEnabled ? ['b', 'l', 'd'] : ['l', 'd'];
+}
+export const SLOT_KEY = { b: 'breakfast', l: 'lunch', d: 'dinner' };
+
 export function mealTotal(entry, weights) {
   const w = weights || { b: 0.5, l: 1, d: 1 };
   return (Number(entry.b) || 0) * w.b + (Number(entry.l) || 0) * w.l + (Number(entry.d) || 0) * w.d;
@@ -88,8 +95,13 @@ function membersInMonth(db, month) {
 }
 
 // ---------- calculations ----------
+export function effWeights(settings) {
+  const w = settings.weights || { b: 0.5, l: 1, d: 1 };
+  return settings.breakfastEnabled ? w : { ...w, b: 0 };
+}
+
 export function computeMonth(db, month) {
-  const w = db.settings.weights;
+  const w = effWeights(db.settings);
   const meals = db.meals.filter((x) => monthOf(x.date) === month);
   const bazar = db.bazar.filter((x) => monthOf(x.date) === month);
   const deposits = db.deposits.filter((x) => monthOf(x.date) === month);
@@ -289,6 +301,7 @@ export function createEngine(store, adapter) {
       address: s.address,
       currency: s.currency,
       weights: s.weights,
+      breakfastEnabled: !!s.breakfastEnabled,
       membersCanEditMeals: s.membersCanEditMeals,
       membersCanAddBazar: s.membersCanAddBazar,
       mealLockHour: s.mealLockHour,
@@ -305,7 +318,7 @@ export function createEngine(store, adapter) {
     const month = p.month || monthOf(todayStr());
     const c = computeMonth(db, month);
     const row = c.rows.find((r) => r.memberId === id) || null;
-    const w = db.settings.weights;
+    const w = effWeights(db.settings);
     return {
       member: publicMember(m),
       month,
@@ -400,9 +413,10 @@ export function createEngine(store, adapter) {
     let n = 0;
     for (const m of db.members.filter((x) => x.active)) {
       if (db.meals.some((x) => x.memberId === m.id && x.date === p.date)) continue;
-      const d = m.defaultMeals || { b: 1, l: 1, d: 1 };
-      if (d.b + d.l + d.d === 0) continue;
-      db.meals.push({ id: uid(), memberId: m.id, date: p.date, b: d.b, l: d.l, d: d.d, by: 'template' });
+      const d = m.defaultMeals || { b: 0, l: 1, d: 1 };
+      const b = db.settings.breakfastEnabled ? d.b : 0;
+      if (b + d.l + d.d === 0) continue;
+      db.meals.push({ id: uid(), memberId: m.id, date: p.date, b, l: d.l, d: d.d, by: 'template' });
       n++;
     }
     notify(db, 'all', `Meals added for ${p.date} (${n} members)`, 'meal');
@@ -478,7 +492,7 @@ export function createEngine(store, adapter) {
     const isNew = !m;
     if (isNew) {
       req(String(p.password || '').length >= 4, 'Password must be at least 4 characters');
-      m = { id: uid(), role: 'member', active: true, createdAt: new Date().toISOString(), defaultMeals: { b: 1, l: 1, d: 1 } };
+      m = { id: uid(), role: 'member', active: true, createdAt: new Date().toISOString(), defaultMeals: { b: db.settings.breakfastEnabled ? 1 : 0, l: 1, d: 1 } };
       db.members.push(m);
     }
     Object.assign(m, {
@@ -654,6 +668,9 @@ export function createEngine(store, adapter) {
     });
     return w;
   }
+  function mealCountText(db, c) {
+    return db.settings.breakfastEnabled ? `Breakfast ${c.b}, Lunch ${c.l}, Dinner ${c.d}` : `Lunch ${c.l}, Dinner ${c.d}`;
+  }
   def('menuSmsPreview', 'manager', (db, p) => {
     const menu = db.menus.find((x) => x.date === p.date);
     if (!menu) throw new AppError('not_found', 'No menu for this date');
@@ -662,7 +679,7 @@ export function createEngine(store, adapter) {
       cook: db.settings.cookName || 'Cook',
       date: p.date,
       menu: menuText(db, menu),
-      meals: `Breakfast ${c.b}, Lunch ${c.l}, Dinner ${c.d}`,
+      meals: mealCountText(db, c),
       mess: db.settings.messName,
     });
     return { number: db.settings.cookPhone, message };
@@ -678,7 +695,7 @@ export function createEngine(store, adapter) {
         cook: db.settings.cookName || 'Cook',
         date: p.date,
         menu: menuText(db, menu),
-        meals: `Breakfast ${c.b}, Lunch ${c.l}, Dinner ${c.d}`,
+        meals: mealCountText(db, c),
         mess: db.settings.messName,
       });
     const r = await sms(db, 'cook', db.settings.cookPhone, message, 'menu');
@@ -741,7 +758,7 @@ export function createEngine(store, adapter) {
   def('getSettings', 'manager', (db) => db.settings);
   def('saveSettings', 'manager', (db, p) => {
     const s = db.settings;
-    const keys = ['messName', 'address', 'currency', 'cookName', 'cookPhone', 'dueSmsTemplate', 'menuSmsTemplate', 'dutySmsTemplate', 'membersCanEditMeals', 'membersCanAddBazar', 'mealLockHour'];
+    const keys = ['breakfastEnabled', 'messName', 'address', 'currency', 'cookName', 'cookPhone', 'dueSmsTemplate', 'menuSmsTemplate', 'dutySmsTemplate', 'membersCanEditMeals', 'membersCanAddBazar', 'mealLockHour'];
     keys.forEach((k) => {
       if (p[k] !== undefined) s[k] = p[k];
     });

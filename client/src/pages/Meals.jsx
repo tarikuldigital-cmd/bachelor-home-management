@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api } from '../lib/api.js';
 import { t, n2 } from '../lib/i18n.js';
 import { num, dateLabel } from '../lib/util.js';
-import { todayStr, addDays, mealTotal } from '../lib/engine.js';
+import { todayStr, addDays, mealTotal, mealSlots, SLOT_KEY, effWeights } from '../lib/engine.js';
 import { Avatar, Stepper, Spinner, useApi, useToast, Empty } from '../components/ui.jsx';
 import { useAuth } from '../App.jsx';
 
@@ -13,7 +13,8 @@ export default function Meals() {
   const { data, loading, reload } = useApi(() => api('mealsForDate', { date }), [date]);
   const [rows, setRows] = useState(null);
   const [lastDate, setLastDate] = useState(null);
-  const w = settings?.weights || { b: 0.5, l: 1, d: 1 };
+  const w = effWeights(settings || { weights: { b: 0.5, l: 1, d: 1 } });
+  const slots = mealSlots(settings);
 
   if (data && lastDate !== date + JSON.stringify(data)) {
     setLastDate(date + JSON.stringify(data));
@@ -74,14 +75,16 @@ export default function Meals() {
           )}
         </div>
         <div className="row mt" style={{ gap: 8 }}>
-          <span className="badge">{t('breakfast')}: {num(tot.b)}</span>
-          <span className="badge">{t('lunch')}: {num(tot.l)}</span>
-          <span className="badge">{t('dinner')}: {num(tot.d)}</span>
+          {slots.map((k) => (
+            <span key={k} className="badge">
+              {t(SLOT_KEY[k])}: {num(tot[k])}
+            </span>
+          ))}
           <span className="badge green">
             {t('totalMeals')}: {num(tot.t)}
           </span>
           <span className="tiny muted">
-            ({t('weights')}: {num(w.b)}/{num(w.l)}/{num(w.d)})
+            ({t('weights')}: {slots.map((k) => num(w[k])).join('/')})
           </span>
         </div>
         {!isManager && (
@@ -104,9 +107,9 @@ export default function Meals() {
                   <span className="badge green meal-total">{num(mealTotal(r, w))}</span>
                 </div>
                 <div className="meal-steps">
-                  {['b', 'l', 'd'].map((k) => (
+                  {slots.map((k) => (
                     <div key={k} className="meal-step">
-                      <span className="tiny muted">{t({ b: 'breakfast', l: 'lunch', d: 'dinner' }[k])}</span>
+                      <span className="tiny muted">{t(SLOT_KEY[k])}</span>
                       <Stepper value={r[k]} step={k === 'b' ? 0.5 : 1} disabled={!canEdit} onChange={(v) => update(r, k, v)} />
                     </div>
                   ))}

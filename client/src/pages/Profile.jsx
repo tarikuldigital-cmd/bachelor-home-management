@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { t, n2 } from '../lib/i18n.js';
 import { money, num, dateLabel, resizeImage } from '../lib/util.js';
-import { monthOf, todayStr } from '../lib/engine.js';
+import { monthOf, todayStr, mealSlots, SLOT_KEY } from '../lib/engine.js';
 import { Avatar, MonthPicker, Spinner, useApi, Empty, useToast } from '../components/ui.jsx';
 import { AccountStats, DueAlert, DepositList } from '../components/Account.jsx';
 import { useAuth } from '../App.jsx';
@@ -15,6 +15,7 @@ export default function Profile() {
   const toast = useToast();
   const cur = settings?.currency || '৳';
   const memberId = id || user.id;
+  const slots = mealSlots(settings);
   const own = memberId === user.id;
   const [month, setMonth] = useState(monthOf(todayStr()));
   const [tab, setTab] = useState('meals');
@@ -136,7 +137,7 @@ export default function Profile() {
           )}
           <span className="k">{t('defaultMeals')}</span>
           <span>
-            {t('breakfast')} {num(m.defaultMeals?.b ?? 0)} · {t('lunch')} {num(m.defaultMeals?.l ?? 0)} · {t('dinner')} {num(m.defaultMeals?.d ?? 0)}
+            {slots.map((k) => `${t(SLOT_KEY[k])} ${num(m.defaultMeals?.[k] ?? 0)}`).join(' · ')}
           </span>
         </div>
       </div>
@@ -171,9 +172,11 @@ export default function Profile() {
                 <thead>
                   <tr>
                     <th>{t('date')}</th>
-                    <th className="num">{t('breakfast')}</th>
-                    <th className="num">{t('lunch')}</th>
-                    <th className="num">{t('dinner')}</th>
+                    {slots.map((k) => (
+                      <th key={k} className="num">
+                        {t(SLOT_KEY[k])}
+                      </th>
+                    ))}
                     <th className="num">{t('total')}</th>
                   </tr>
                 </thead>
@@ -181,9 +184,11 @@ export default function Profile() {
                   {d.meals.map((x) => (
                     <tr key={x.id}>
                       <td>{dateLabel(x.date)}</td>
-                      <td className="num">{num(x.b)}</td>
-                      <td className="num">{num(x.l)}</td>
-                      <td className="num">{num(x.d)}</td>
+                      {slots.map((k) => (
+                        <td key={k} className="num">
+                          {num(x[k])}
+                        </td>
+                      ))}
                       <td className="num bold">{num(x.total)}</td>
                     </tr>
                   ))}

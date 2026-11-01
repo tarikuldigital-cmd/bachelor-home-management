@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { t, n2 } from '../lib/i18n.js';
 import { resizeImage } from '../lib/util.js';
-import { todayStr } from '../lib/engine.js';
+import { todayStr, mealSlots, SLOT_KEY } from '../lib/engine.js';
 import { Avatar, Modal, Field, Spinner, useApi, useToast, Empty } from '../components/ui.jsx';
 import { useAuth } from '../App.jsx';
 
@@ -40,6 +40,8 @@ export function PhotoInput({ value, name, onChange }) {
 
 export function MemberForm({ member, onClose, onSaved }) {
   const toast = useToast();
+  const { settings } = useAuth();
+  const slots = mealSlots(settings);
   const [f, setF] = useState(() => ({
     name: '',
     username: '',
@@ -58,7 +60,7 @@ export function MemberForm({ member, onClose, onSaved }) {
     leaveDate: '',
     active: true,
     photo: '',
-    defaultMeals: { b: 1, l: 1, d: 1 },
+    defaultMeals: { b: 0, l: 1, d: 1 },
     ...(member || {}),
     password: '',
   }));
@@ -152,9 +154,9 @@ export function MemberForm({ member, onClose, onSaved }) {
         </div>
         <Field label={t('defaultMeals')}>
           <div className="row">
-            {['b', 'l', 'd'].map((k) => (
+            {slots.map((k) => (
               <label key={k} className="row" style={{ gap: 6 }}>
-                <span className="small muted">{t({ b: 'breakfast', l: 'lunch', d: 'dinner' }[k])}</span>
+                <span className="small muted">{t(SLOT_KEY[k])}</span>
                 <input className="input" style={{ width: 70 }} type="number" min="0" step="0.5" value={f.defaultMeals?.[k] ?? 0} onChange={(e) => setDm(k, e.target.value)} />
               </label>
             ))}

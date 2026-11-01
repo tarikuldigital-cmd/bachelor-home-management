@@ -46,7 +46,7 @@ export async function seedDemo(hash) {
       joinDate: `${month}-01`,
       leaveDate: '',
       active: true,
-      defaultMeals: { b: 1, l: 1, d: 1 },
+      defaultMeals: { b: 0, l: 1, d: 1 },
       passwordHash: pw,
       createdAt: new Date().toISOString(),
     });
@@ -68,7 +68,7 @@ export async function seedDemo(hash) {
       db.members.forEach((m) => {
         const r = rnd();
         if (r < 0.08) return;
-        db.meals.push({ id: `ml${k}${d}${m.id}`, memberId: m.id, date, b: 1, l: r < 0.3 ? 0 : 1, d: 1 });
+        db.meals.push({ id: `ml${k}${d}${m.id}`, memberId: m.id, date, b: 0, l: r < 0.3 ? 0 : 1, d: 1 });
       });
       if (d % 2 === 1 || d === lastDay) {
         const m = db.members[(d >> 1) % db.members.length];
@@ -95,8 +95,8 @@ export async function seedDemo(hash) {
   });
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  db.menus.push({ id: 'mn1', date: today, breakfast: 'Khichuri, fried egg', lunch: 'Rice, rui fish, dal', dinner: 'Rice, chicken curry, vegetables', note: '' });
-  db.menus.push({ id: 'mn2', date: todayStr(tomorrow), breakfast: 'Paratha, dal', lunch: 'Rice, hilsa fish, greens', dinner: 'Rice, egg curry, dal', note: 'Less spicy' });
+  db.menus.push({ id: 'mn1', date: today, breakfast: '', lunch: 'Rice, rui fish, dal', dinner: 'Rice, chicken curry, vegetables', note: '' });
+  db.menus.push({ id: 'mn2', date: todayStr(tomorrow), breakfast: '', lunch: 'Rice, hilsa fish, greens', dinner: 'Rice, egg curry, dal', note: 'Less spicy' });
   for (let i = 0; i < 6; i++) {
     const dt = new Date();
     dt.setDate(dt.getDate() + i * 2);
