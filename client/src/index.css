@@ -266,3 +266,4 @@ footer.foot { color: var(--muted); font-size: 13px; text-align: center; padding:
 .rules-list li { line-height: 1.55; }
 .rules-list li::marker { color: var(--warn); font-weight: 700; }
 @media (min-width: 900px) { .rules-list { grid-template-columns: 1fr 1fr; column-gap: 32px; } }
+.card.sel { border-color: var(--primary); background: var(--primary-soft); }

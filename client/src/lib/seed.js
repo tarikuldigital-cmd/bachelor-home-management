@@ -102,6 +102,11 @@ export async function seedDemo(hash) {
     dt.setDate(dt.getDate() + i * 2);
     db.duties.push({ id: 'du' + i, date: todayStr(dt), memberId: db.members[(i + 1) % db.members.length].id, note: '' });
   }
+  db.members[0].managerSince = `${month}-01`;
+  db.managerHistory = [
+    { memberId: 'm3', name: 'Md. Tarikul', from: `${prev}-01`, to: `${month}-01`, note: 'Tk 1,200 cash handed over', by: 'm3' },
+    { memberId: 'm1', name: 'Mehedi Hasan', from: `${month}-01`, to: null, note: '', by: 'm3' },
+  ];
   db.notifications.push({ id: 'n1', to: 'all', text: 'Welcome to Bachelor Home Management! 🎉', kind: 'notice', date: new Date().toISOString(), readBy: [] });
   return db;
 }

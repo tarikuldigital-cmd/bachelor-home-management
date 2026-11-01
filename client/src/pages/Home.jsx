@@ -4,7 +4,7 @@ import { api, DEMO } from '../lib/api.js';
 import { t, n2 } from '../lib/i18n.js';
 import { money, num, monthLabel, dateLabel } from '../lib/util.js';
 import { monthOf, todayStr } from '../lib/engine.js';
-import { Brand, Stat, MonthPicker, Bars, Empty, Spinner, useApi } from '../components/ui.jsx';
+import { Brand, Stat, MonthPicker, Bars, Empty, Spinner, useApi, Avatar } from '../components/ui.jsx';
 import { useAuth, usePrefs } from '../App.jsx';
 import { getLang } from '../lib/i18n.js';
 
@@ -126,6 +126,15 @@ export default function Home() {
                   </div>
                   <h1 style={{ marginTop: 6 }}>{monthLabel(month)}</h1>
                   <p>{t('tagline')}</p>
+                  {data.manager && (
+                    <div className="row mt" style={{ gap: 8 }}>
+                      <Avatar src={data.manager.photo} name={data.manager.name} size={34} />
+                      <div className="small">
+                        <div style={{ opacity: 0.8 }}>⭐ {t('managerOfMonth')}</div>
+                        <b>{data.manager.name}</b>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="right">
                   <div className="small" style={{ opacity: 0.85 }}>{t('runningMealRate')}</div>

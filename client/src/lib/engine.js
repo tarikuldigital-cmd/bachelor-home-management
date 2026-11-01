@@ -6,10 +6,10 @@ export const BILL_TYPES = ['electricity', 'wifi', 'buya', 'garbage', 'gas', 'wat
 
 // Common bachelor-mess rules (manager can edit in Settings). Each rule: { en, bn }
 export const DEFAULT_RULES = [
-  { en: "Update tomorrow's meal (on/off) in the app before 10 PM tonight.", bn: 'আগামীকালের মিল (চালু/বন্ধ) আজ রাত ১০টার মধ্যে অ্যাপে আপডেট করুন।' },
+  { en: "Tell the manager tomorrow's meal on/off before 10 PM tonight.", bn: 'আগামীকালের মিল চালু/বন্ধ আজ রাত ১০টার মধ্যে ম্যানেজারকে জানান।' },
   { en: 'Pay your meal deposit by the 5th of every month.', bn: 'প্রতি মাসের ৫ তারিখের মধ্যে মিলের টাকা জমা দিন।' },
   { en: 'Pay service charges (electricity, Wi-Fi, maid, garbage, gas) by the 10th of every month.', bn: 'সার্ভিস চার্জ (বিদ্যুৎ, ওয়াইফাই, বুয়া, ময়লা, গ্যাস) প্রতি মাসের ১০ তারিখের মধ্যে পরিশোধ করুন।' },
-  { en: 'Do bazar on your assigned duty day and enter the cost in the app the same day.', bn: 'নিজের বাজার ডিউটির দিনে বাজার করুন এবং সেদিনই খরচ অ্যাপে লিখে দিন।' },
+  { en: 'Do bazar on your assigned duty day and give the receipt/cost to the manager the same day.', bn: 'নিজের বাজার ডিউটির দিনে বাজার করুন এবং সেদিনই রসিদ বা খরচের হিসাব ম্যানেজারকে দিন।' },
   { en: 'Keep the kitchen, washroom and common areas clean. Wash your own plates and glasses.', bn: 'রান্নাঘর, বাথরুম ও কমন জায়গা পরিষ্কার রাখুন। নিজের প্লেট-গ্লাস নিজে ধুয়ে রাখুন।' },
   { en: 'Save electricity, water and gas. Switch off lights, fans and AC when you leave the room.', bn: 'বিদ্যুৎ, পানি ও গ্যাস অপচয় করবেন না। রুম থেকে বের হলে লাইট-ফ্যান-এসি বন্ধ করুন।' },
   { en: 'No loud music or noise after 11 PM. Respect others’ study and sleep.', bn: 'রাত ১১টার পর জোরে গান বা শব্দ করা যাবে না। অন্যের পড়াশোনা ও ঘুমের প্রতি সম্মান রাখুন।' },
@@ -32,8 +32,9 @@ export function emptyDb() {
       weights: { b: 0.5, l: 1, d: 1 },
       breakfastEnabled: false, // two meals a day: lunch + dinner
       rules: DEFAULT_RULES,
-      membersCanEditMeals: true,
-      membersCanAddBazar: true,
+      // Only the manager updates meals, bazar, deposits & bills (personal charges)
+      membersCanEditMeals: false,
+      membersCanAddBazar: false,
       mealLockHour: 22, // members can edit tomorrow's meal until this hour today
       cookName: '',
       cookPhone: '',
@@ -51,6 +52,7 @@ export function emptyDb() {
     duties: [],
     notifications: [],
     smsLog: [],
+    managerHistory: [], // [{ memberId, name, from, to, note, by }]
   };
 }
 
@@ -289,6 +291,10 @@ export function createEngine(store, adapter) {
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(0, 7)
         .map((x) => ({ date: x.date, name: db.members.find((m) => m.id === x.memberId)?.name || '' })),
+      manager: (() => {
+        const m = db.members.find((x) => x.role === 'manager');
+        return m ? { name: m.name, photo: m.photo, since: m.managerSince || '' } : null;
+      })(),
       rules: Array.isArray(db.settings.rules) ? db.settings.rules : DEFAULT_RULES,
       months: allMonths(db),
     };
@@ -322,8 +328,8 @@ export function createEngine(store, adapter) {
       currency: s.currency,
       weights: s.weights,
       breakfastEnabled: !!s.breakfastEnabled,
-      membersCanEditMeals: s.membersCanEditMeals,
-      membersCanAddBazar: s.membersCanAddBazar,
+      membersCanEditMeals: false,
+      membersCanAddBazar: false,
       mealLockHour: s.mealLockHour,
     };
   }
@@ -383,7 +389,6 @@ export function createEngine(store, adapter) {
     if (p.photo !== undefined) m.photo = p.photo;
     if (p.phone !== undefined) m.phone = String(p.phone).trim();
     if (p.email !== undefined) m.email = String(p.email).trim();
-    if (p.defaultMeals) m.defaultMeals = sanitizeMeals(p.defaultMeals);
     return publicMember(m);
   });
 
@@ -403,7 +408,9 @@ export function createEngine(store, adapter) {
 
   function canEditMeal(db, me, memberId, date) {
     if (me.role === 'manager') return true;
-    if (memberId !== me.id || !db.settings.membersCanEditMeals) return false;
+    return false; // personal charges: manager only
+    // eslint-disable-next-line no-unreachable
+    if (memberId !== me.id) return false;
     const now = new Date();
     const today = todayStr(now);
     if (date > addDays(today, 1)) return true;
@@ -413,7 +420,7 @@ export function createEngine(store, adapter) {
 
   def('setMeal', 'member', (db, p, me) => {
     validDate(p.date);
-    if (!canEditMeal(db, me, p.memberId, p.date)) throw new AppError('forbidden', 'This meal can no longer be changed');
+    if (!canEditMeal(db, me, p.memberId, p.date)) throw new AppError('forbidden', 'Only the manager can update meals');
     const vals = sanitizeMeals(p);
     let e = db.meals.find((x) => x.memberId === p.memberId && x.date === p.date);
     if (!e) {
@@ -453,7 +460,7 @@ export function createEngine(store, adapter) {
   });
   def('addBazar', 'member', (db, p, me) => {
     validDate(p.date);
-    if (me.role !== 'manager' && (!db.settings.membersCanAddBazar || p.memberId !== me.id)) throw new AppError('forbidden', 'Not allowed');
+    if (me.role !== 'manager') throw new AppError('forbidden', 'Only the manager can add bazar costs');
     const amount = num(p.amount);
     req(amount > 0, 'Enter an amount');
     const item = { id: uid(), date: p.date, memberId: p.memberId || me.id, items: String(p.items || '').slice(0, 500), amount, by: me.id, createdAt: new Date().toISOString() };
@@ -554,13 +561,33 @@ export function createEngine(store, adapter) {
     return { deleted: true };
   });
 
-  def('transferManager', 'manager', (db, p, me) => {
+  // ----- monthly manager handover -----
+  def('handoverManager', 'manager', (db, p, me) => {
     const m = db.members.find((x) => x.id === p.memberId && x.active);
-    if (!m) throw new AppError('not_found');
-    db.members.find((x) => x.id === me.id).role = 'member';
-    m.role = 'manager';
-    notify(db, 'all', `New manager: ${m.name}`, 'member');
+    if (!m) throw new AppError('not_found', 'Select an active member');
+    if (m.id === me.id) throw new AppError('bad_request', 'You are already the manager');
+    const note = String(p.note || '').slice(0, 300);
+    if (p.mode === 'nextMonth') {
+      const date = firstOfNextMonth(todayStr());
+      db.settings.pendingHandover = { to: m.id, date, note, by: me.id, createdAt: new Date().toISOString() };
+      notify(db, 'all', `Manager handover scheduled: ${m.name} will be manager from ${date}`, 'member');
+      notify(db, m.id, `You will become the manager from ${date}`, 'member');
+      return { scheduled: true, date };
+    }
+    doHandover(db, m.id, me.id, note);
     return { ok: true };
+  });
+  def('cancelHandover', 'manager', (db) => {
+    delete db.settings.pendingHandover;
+    return { ok: true };
+  });
+  def('managerHistory', 'member', (db) => {
+    ensureHistory(db);
+    const p = db.settings.pendingHandover;
+    return {
+      history: [...db.managerHistory].reverse(),
+      pending: p ? { ...p, name: db.members.find((m) => m.id === p.to)?.name || '' } : null,
+    };
   });
 
   def('listDeposits', 'manager', (db, p) => {
@@ -778,7 +805,7 @@ export function createEngine(store, adapter) {
   def('getSettings', 'manager', (db) => ({ ...db.settings, rules: Array.isArray(db.settings.rules) ? db.settings.rules : DEFAULT_RULES }));
   def('saveSettings', 'manager', (db, p) => {
     const s = db.settings;
-    const keys = ['breakfastEnabled', 'messName', 'address', 'currency', 'cookName', 'cookPhone', 'dueSmsTemplate', 'menuSmsTemplate', 'dutySmsTemplate', 'membersCanEditMeals', 'membersCanAddBazar', 'mealLockHour'];
+    const keys = ['breakfastEnabled', 'messName', 'address', 'currency', 'cookName', 'cookPhone', 'dueSmsTemplate', 'menuSmsTemplate', 'dutySmsTemplate', 'mealLockHour'];
     keys.forEach((k) => {
       if (p[k] !== undefined) s[k] = p[k];
     });
@@ -799,8 +826,48 @@ export function createEngine(store, adapter) {
     return { ok: true };
   });
 
+  function firstOfNextMonth(d) {
+    const [y, m] = d.split('-').map(Number);
+    return m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`;
+  }
+  function ensureHistory(db) {
+    if (!Array.isArray(db.managerHistory)) db.managerHistory = [];
+    const cur = db.members.find((m) => m.role === 'manager');
+    const open = db.managerHistory.find((h) => !h.to);
+    if (cur && (!open || open.memberId !== cur.id)) {
+      if (open) open.to = todayStr();
+      db.managerHistory.push({ memberId: cur.id, name: cur.name, from: cur.managerSince || todayStr(), to: null, note: '', by: '' });
+      return true;
+    }
+    return false;
+  }
+  function doHandover(db, toId, byId, note) {
+    ensureHistory(db);
+    const today = todayStr();
+    const to = db.members.find((m) => m.id === toId && m.active);
+    if (!to) return false;
+    db.members.forEach((m) => {
+      if (m.role === 'manager') m.role = 'member';
+    });
+    to.role = 'manager';
+    to.managerSince = today;
+    const open = db.managerHistory.find((h) => !h.to);
+    if (open) open.to = today;
+    db.managerHistory.push({ memberId: to.id, name: to.name, from: today, to: null, note, by: byId });
+    delete db.settings.pendingHandover;
+    notify(db, 'all', `Manager handover: ${to.name} is now the manager`, 'member');
+    return true;
+  }
+  // apply a scheduled handover once its date arrives
+  function applyPending(db) {
+    const p = db.settings.pendingHandover;
+    let changed = ensureHistory(db);
+    if (p && todayStr() >= p.date) changed = doHandover(db, p.to, p.by, p.note) || changed;
+    return changed;
+  }
+
   const READ_ONLY = new Set([
-    'publicSummary', 'me', 'directory', 'memberDetail', 'notifications', 'mealsForDate', 'listBazar', 'listDuties', 'listMenus',
+    'publicSummary', 'managerHistory', 'me', 'directory', 'memberDetail', 'notifications', 'mealsForDate', 'listBazar', 'listDuties', 'listMenus',
     'overview', 'listMembers', 'listDeposits', 'listBills', 'menuSmsPreview', 'dueList', 'smsLog', 'getSettings', 'exportData',
   ]);
 
@@ -809,6 +876,7 @@ export function createEngine(store, adapter) {
     if (!a) throw new AppError('unknown_action', 'Unknown action: ' + action);
     return serial(async () => {
       const db = await store.load();
+      const autoChanged = applyPending(db);
       let me = null;
       if (a.role !== 'public') {
         const t = token ? await adapter.verifyToken(token) : null;
@@ -817,7 +885,7 @@ export function createEngine(store, adapter) {
         if (a.role === 'manager' && me.role !== 'manager') throw new AppError('forbidden', 'Only the manager can do this');
       }
       const result = await a.fn(db, payload || {}, me);
-      if (!READ_ONLY.has(action)) await store.save(db);
+      if (autoChanged || !READ_ONLY.has(action)) await store.save(db);
       return JSON.parse(JSON.stringify(result ?? null));
     });
   }

@@ -47,8 +47,7 @@ export default function Meals() {
     { b: 0, l: 0, d: 0, t: 0 },
   );
   const today = todayStr();
-  const editableForMember = settings?.membersCanEditMeals && (date > addDays(today, 1) || (date === addDays(today, 1) && new Date().getHours() < (settings?.mealLockHour ?? 22)));
-  const canEdit = isManager || editableForMember;
+  const canEdit = isManager; // personal charges: only the manager updates
 
   return (
     <div className="grid" style={{ gap: 16 }}>
@@ -89,7 +88,7 @@ export default function Meals() {
         </div>
         {!isManager && (
           <div className="small muted mt">
-            ℹ️ {t('mealLockInfo', { h: n2(settings?.mealLockHour ?? 22) })}
+            🔒 {t('managerOnlyMeals')}
           </div>
         )}
       </div>
@@ -110,7 +109,13 @@ export default function Meals() {
                   {slots.map((k) => (
                     <div key={k} className="meal-step">
                       <span className="tiny muted">{t(SLOT_KEY[k])}</span>
-                      <Stepper value={r[k]} step={k === 'b' ? 0.5 : 1} disabled={!canEdit} onChange={(v) => update(r, k, v)} />
+                      {canEdit ? (
+                        <Stepper value={r[k]} step={k === 'b' ? 0.5 : 1} onChange={(v) => update(r, k, v)} />
+                      ) : (
+                        <span className={`badge ${r[k] ? 'green' : ''}`} style={{ minWidth: 44, justifyContent: 'center', fontSize: 14 }}>
+                          {r[k] ? `✓ ${num(r[k])}` : '✕'}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>

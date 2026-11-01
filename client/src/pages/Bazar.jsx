@@ -20,7 +20,7 @@ export default function Bazar() {
   const [dutyForm, setDutyForm] = useState(null);
   const [every, setEvery] = useState(2);
 
-  const canAdd = isManager || settings?.membersCanAddBazar;
+  const canAdd = isManager; // only the manager adds bazar costs
   const active = (members.data || []).filter((m) => m.active);
 
   const save = async () => {
@@ -127,7 +127,7 @@ export default function Bazar() {
                       <td className="muted">{b.by}</td>
                       <td className="num bold">{money(b.amount, cur)}</td>
                       <td className="right" style={{ whiteSpace: 'nowrap' }}>
-                        {(isManager || b.memberId === user.id) && (
+                        {isManager && (
                           <>
                             <button className="btn sm ghost" onClick={() => setForm({ ...b })}>
                               ✏️

@@ -6,6 +6,7 @@ import { resizeImage } from '../lib/util.js';
 import { todayStr, mealSlots, SLOT_KEY } from '../lib/engine.js';
 import { Avatar, Modal, Field, Spinner, useApi, useToast, Empty } from '../components/ui.jsx';
 import { useAuth } from '../App.jsx';
+import { HandoverCard } from '../components/Handover.jsx';
 
 export function PhotoInput({ value, name, onChange }) {
   const toast = useToast();
@@ -253,6 +254,7 @@ export default function Members() {
           <div className="grid g4">{inactive.map(card)}</div>
         </>
       )}
+      <HandoverCard />
       {edit && (
         <MemberForm
           member={edit.id ? edit : null}

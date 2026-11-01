@@ -4,6 +4,7 @@ import { t } from '../lib/i18n.js';
 import { download } from '../lib/util.js';
 import { mealSlots, SLOT_KEY, DEFAULT_RULES } from '../lib/engine.js';
 import { Field, useApi, useToast } from '../components/ui.jsx';
+import { HandoverCard } from '../components/Handover.jsx';
 import { useAuth, usePrefs } from '../App.jsx';
 
 function ChangePassword() {
@@ -39,10 +40,8 @@ function ChangePassword() {
 }
 
 function MyMealTemplate() {
-  const { user, refresh, settings } = useAuth();
+  const { user, refresh } = useAuth();
   const toast = useToast();
-  const slots = mealSlots(settings);
-  const [dm, setDm] = useState(user.defaultMeals || { b: 0, l: 1, d: 1 });
   const [phone, setPhone] = useState(user.phone || '');
   return (
     <div className="card">
@@ -51,22 +50,12 @@ function MyMealTemplate() {
         <Field label={`${t('phone')} (SMS)`}>
           <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
-        <Field label={t('defaultMeals')}>
-          <div className="row">
-            {slots.map((k) => (
-              <label key={k} className="row small" style={{ gap: 6 }}>
-                {t(SLOT_KEY[k])}
-                <input className="input" style={{ width: 70 }} type="number" min="0" step="0.5" value={dm[k]} onChange={(e) => setDm({ ...dm, [k]: Number(e.target.value) })} />
-              </label>
-            ))}
-          </div>
-        </Field>
       </div>
       <button
         className="btn primary mt"
         onClick={async () => {
           try {
-            await api('updateMyProfile', { defaultMeals: dm, phone });
+            await api('updateMyProfile', { phone });
             toast(t('saved'));
             refresh();
           } catch (e) {
@@ -82,11 +71,9 @@ function MyMealTemplate() {
 
 function MessSettings() {
   const toast = useToast();
-  const { refresh, user, logout } = useAuth();
+  const { refresh, logout } = useAuth();
   const s = useApi(() => api('getSettings'), []);
-  const members = useApi(() => api('listMembers'), []);
   const [f, setF] = useState(null);
-  const [to, setTo] = useState('');
   useEffect(() => {
     if (s.data) setF(s.data);
   }, [s.data]);
@@ -127,9 +114,6 @@ function MessSettings() {
               ))}
             </div>
           </Field>
-          <Field label={t('mealLockHour')}>
-            <input className="input" type="number" min="0" max="24" value={f.mealLockHour} onChange={set('mealLockHour')} />
-          </Field>
         </div>
         <div className="grid mt">
           <b>🍽️ {t('mealsPerDay')}</b>
@@ -141,13 +125,7 @@ function MessSettings() {
               {t('threeMeals')}
             </button>
           </div>
-          <b>{t('permissions')}</b>
-          <label className="check">
-            <input type="checkbox" checked={f.membersCanEditMeals} onChange={set('membersCanEditMeals')} /> {t('membersCanEditMeals')}
-          </label>
-          <label className="check">
-            <input type="checkbox" checked={f.membersCanAddBazar} onChange={set('membersCanAddBazar')} /> {t('membersCanAddBazar')}
-          </label>
+          <div className="alert green small">🔒 {t('managerOnlyCharges')}</div>
         </div>
         <h3 className="mt2">✉️ {t('templates')}</h3>
         <div className="grid mt">
@@ -199,37 +177,7 @@ function MessSettings() {
         </button>
       </div>
 
-      <div className="card">
-        <h3>⭐ {t('transferManager')}</h3>
-        <div className="row mt">
-          <select className="input" style={{ maxWidth: 260 }} value={to} onChange={(e) => setTo(e.target.value)}>
-            <option value="">—</option>
-            {(members.data || [])
-              .filter((m) => m.active && m.id !== user.id)
-              .map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-          </select>
-          <button
-            className="btn danger"
-            disabled={!to}
-            onClick={async () => {
-              if (!confirm(t('transferManager') + '?')) return;
-              try {
-                await api('transferManager', { memberId: to });
-                toast(t('saved'));
-                await refresh();
-              } catch (e) {
-                toast(e.message, true);
-              }
-            }}
-          >
-            {t('transferManager')}
-          </button>
-        </div>
-      </div>
+      <HandoverCard />
 
       <div className="card">
         <h3>💾 {t('backup')}</h3>
@@ -315,7 +263,7 @@ export default function Settings() {
         <MyMealTemplate />
         <ChangePassword />
       </div>
-      {isManager && <MessSettings />}
+      {isManager ? <MessSettings /> : <HandoverCard />}
     </div>
   );
 }
